@@ -43,8 +43,14 @@ const unlocked = (state, id) => state?.world?.unlockedLocations?.includes(id);
 export const LOCATIONS = [
   { id:'yuzhou', name:'渝州城', icon:'渝', desc:'暗流涌动的起点。玄冥教正在城外活动。', unlock:()=>true },
   { id:'cangbing', name:'藏兵谷', icon:'藏', desc:'不良人旧部留下的隐秘据点。', unlock:(s)=>unlocked(s,'cangbing') },
-  { id:'qiguo', name:'岐国', icon:'岐', desc:'幻音坊所在之地，女帝坐镇。', unlock:(s)=>unlocked(s,'qiguo') },
-  { id:'raojiang', name:'娆疆', icon:'娆', desc:'万毒窟、蛊术与十万大山。', unlock:(s)=>unlocked(s,'raojiang') }
+  { id:'xuanming', name:'玄冥教', icon:'冥', desc:'玄冥教势力盘踞之处，高手众多。', unlock:(s)=>unlocked(s,'xuanming') },
+  { id:'tongwenguan', name:'通文馆', icon:'文', desc:'晋地大势力通文馆所在。', unlock:(s)=>unlocked(s,'tongwenguan') },
+  { id:'qiguo', name:'岐国', icon:'岐', desc:'凤翔一带，幻音坊势力所在。', unlock:(s)=>unlocked(s,'qiguo') },
+  { id:'huanyinfang', name:'幻音坊', icon:'幻', desc:'女帝麾下幻音坊的核心据点。', unlock:(s)=>unlocked(s,'huanyinfang') },
+  { id:'taiyuan', name:'太原', icon:'太', desc:'晋地重镇，群雄势力交错。', unlock:(s)=>unlocked(s,'taiyuan') },
+  { id:'raojiang', name:'娆疆', icon:'娆', desc:'万毒窟、蛊术与十万大山。', unlock:(s)=>unlocked(s,'raojiang') },
+  { id:'mobei', name:'漠北', icon:'漠', desc:'北地风沙漫天，强敌与异族势力盘踞。', unlock:(s)=>unlocked(s,'mobei') },
+  { id:'longquan', name:'龙泉秘地', icon:'龙', desc:'只在满足特殊条件后才会显露的秘密地点。', unlock:(s)=>unlocked(s,'longquan') }
 ];
 
 export const ITEMS = [
