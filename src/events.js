@@ -1,6 +1,17 @@
 import { checkConditions } from './conditions.js';
 import { applyRewards } from './progression.js';
 
+function relationStage(rel = {}) {
+  if (!rel.met) return 'unknown';
+  const value = Number.isFinite(rel.affinity) ? rel.affinity : 0;
+  if (value >= 70) return 'close';
+  if (value >= 45) return 'trusted';
+  if (value >= 20) return 'familiar';
+  if (value >= 0) return 'acquainted';
+  if (value >= -40) return 'cold';
+  return 'hostile';
+}
+
 export const EVENTS = [
   {
     id: 's1_yuzhou_scout',
@@ -65,6 +76,26 @@ export const EVENTS = [
     rewards: {},
     effects: [{ type: 'changeAffinity', character: 'chimeng', value: 5 }],
     log: '你没有拆穿蚩梦拐弯抹角的试探，她对你的态度明显亲近了一些。'
+  },
+  {
+    id: 's1_chimeng_chat_02',
+    season: 1,
+    category: 'character',
+    location: 'yuzhou',
+    title: '蚩梦的认真话',
+    desc: '经过上一次交谈，蚩梦终于愿意把真正担心的事情告诉你。',
+    conditions: [
+      { type: 'eventCompleted', event: 's1_chimeng_chat_01' },
+      { type: 'affinityGte', character: 'chimeng', value: 25 },
+      { type: 'eventNotCompleted', event: 's1_chimeng_chat_02' }
+    ],
+    action: { type: 'instant' },
+    rewards: {},
+    effects: [
+      { type: 'changeAffinity', character: 'chimeng', value: 5 },
+      { type: 'setPersonalFlag', character: 'chimeng', key: 'shared_real_concern', value: true }
+    ],
+    log: '蚩梦收起玩笑，第一次认真向你说起自己真正担心的事。你们之间的信任更深了一层。'
   },
   {
     id: 's1_cangbing_mark',
@@ -148,7 +179,18 @@ function applyEffect(state, effect) {
       break;
     case 'changeAffinity': {
       const rel = state.relationships?.[effect.character];
-      if (rel) rel.affinity = Math.max(-100, Math.min(100, rel.affinity + effect.value));
+      if (rel) {
+        rel.affinity = Math.max(-100, Math.min(100, rel.affinity + effect.value));
+        rel.relationStage = relationStage(rel);
+      }
+      break;
+    }
+    case 'setPersonalFlag': {
+      const rel = state.relationships?.[effect.character];
+      if (rel) {
+        rel.personalFlags = rel.personalFlags || {};
+        rel.personalFlags[effect.key] = effect.value;
+      }
       break;
     }
     case 'addItem':
@@ -164,6 +206,7 @@ export function completeEvent(state, eventId) {
   const event = getEvent(eventId);
   if (!event) return { ok: false, event: null, levels: 0 };
   if (!event.repeatable && state.events.completed.includes(event.id)) return { ok: false, event, levels: 0 };
+  if (!checkConditions(event.conditions || [], state)) return { ok: false, event, levels: 0 };
 
   const rewardsResult = applyRewards(state, event.rewards || {});
   for (const effect of event.effects || []) applyEffect(state, effect);
