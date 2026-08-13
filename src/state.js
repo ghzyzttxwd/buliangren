@@ -7,6 +7,29 @@ function martialArt(learned = true, mastery = 1, exp = 0) {
   return { learned, mastery, exp };
 }
 
+function relationStage(rel = {}) {
+  if (!rel.met) return 'unknown';
+  const value = Number.isFinite(rel.affinity) ? rel.affinity : 0;
+  if (value >= 70) return 'close';
+  if (value >= 45) return 'trusted';
+  if (value >= 20) return 'familiar';
+  if (value >= 0) return 'acquainted';
+  if (value >= -40) return 'cold';
+  return 'hostile';
+}
+
+function normalizeRelationships(relationships = {}) {
+  for (const rel of Object.values(relationships)) {
+    if (!rel || typeof rel !== 'object') continue;
+    rel.affinity = Math.max(-100, Math.min(100, Number.isFinite(rel.affinity) ? rel.affinity : 0));
+    rel.relationStage = relationStage(rel);
+    if (!rel.personalFlags || typeof rel.personalFlags !== 'object' || Array.isArray(rel.personalFlags)) {
+      rel.personalFlags = {};
+    }
+  }
+  return relationships;
+}
+
 export function defaultState() {
   const now = Date.now();
   return {
@@ -36,7 +59,7 @@ export function defaultState() {
       }
     },
     relationships: {
-      chimeng: { met: true, affinity: 20, relationStage: 'acquainted', personalFlags: {} },
+      chimeng: { met: true, affinity: 20, relationStage: 'familiar', personalFlags: {} },
       nvdi: { met: false, affinity: 0, relationStage: 'unknown', personalFlags: {} },
       jiangchen: { met: false, affinity: 0, relationStage: 'unknown', personalFlags: {} }
     },
@@ -83,6 +106,7 @@ function normalizeV2(raw) {
   if (state.world.flags.chapter1Done && !state.world.unlockedLocations.includes('qiguo')) {
     state.world.unlockedLocations.push('qiguo');
   }
+  normalizeRelationships(state.relationships);
   return state;
 }
 
