@@ -1,0 +1,30 @@
+.brand-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.brand {
+  min-width: 0;
+}
+
+.brand h1,
+.brand small {
+  white-space: nowrap;
+}
+
+.resources {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.resource {
+  min-width: 0;
+  text-align: center;
+  padding: 6px 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
