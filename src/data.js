@@ -38,11 +38,13 @@ export const ENEMIES = {
   blackwuchang: { id:'blackwuchang', name:'黑无常', maxHp:240, attack:29, defense:12, speed:15 }
 };
 
+const unlocked = (state, id) => state?.world?.unlockedLocations?.includes(id);
+
 export const LOCATIONS = [
   { id:'yuzhou', name:'渝州城', icon:'渝', desc:'暗流涌动的起点。玄冥教正在城外活动。', unlock:()=>true },
-  { id:'cangbing', name:'藏兵谷', icon:'藏', desc:'不良人旧部留下的隐秘据点。', unlock:(s)=>s.flags.scoutDefeated },
-  { id:'qiguo', name:'岐国', icon:'岐', desc:'幻音坊所在之地，女帝坐镇。', unlock:(s)=>s.flags.chapter1Done },
-  { id:'raojiang', name:'娆疆', icon:'娆', desc:'万毒窟、蛊术与十万大山。', unlock:()=>false }
+  { id:'cangbing', name:'藏兵谷', icon:'藏', desc:'不良人旧部留下的隐秘据点。', unlock:(s)=>unlocked(s,'cangbing') },
+  { id:'qiguo', name:'岐国', icon:'岐', desc:'幻音坊所在之地，女帝坐镇。', unlock:(s)=>unlocked(s,'qiguo') },
+  { id:'raojiang', name:'娆疆', icon:'娆', desc:'万毒窟、蛊术与十万大山。', unlock:(s)=>unlocked(s,'raojiang') }
 ];
 
 export const ITEMS = [
