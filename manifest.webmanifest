@@ -1,0 +1,13 @@
+{
+  "name": "不良人：江湖行",
+  "short_name": "江湖行",
+  "description": "私人非商业同人单机网页游戏原型",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#090b10",
+  "theme_color": "#0d1017",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "./assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
