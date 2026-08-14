@@ -1,23 +1,18 @@
-import { CHARACTERS, SKILLS, ENEMIES } from './data.js';
+import { SKILLS } from './data.js';
+import { buildPlayerCombatant, buildCompanionCombatant, buildEnemyCombatant } from './combatants.js';
 
-const clone = (x) => JSON.parse(JSON.stringify(x));
 const alive = (x) => x.hp > 0;
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
-function learnedPlayerSkills(martialArts = {}) {
-  return Object.entries(martialArts)
-    .filter(([id, art]) => art?.learned === true && SKILLS[id]?.playerLearnable === true)
-    .map(([id]) => id);
-}
-
-export function createBattle(enemyIds, partyIds, martialArts = {}) {
-  const learned = learnedPlayerSkills(martialArts);
-  const allies = partyIds.map(id => {
-    const base = clone(CHARACTERS[id]);
-    if (id === 'player') base.skills = [...new Set([...(base.skills || []), ...learned])];
-    return { ...base, hp: base.maxHp, side:'ally' };
-  });
-  const enemies = enemyIds.map((id,i) => ({ ...clone(ENEMIES[id]), uid:`${id}_${i}`, hp:ENEMIES[id].maxHp, side:'enemy' }));
+export function createBattle(enemyIds, partyIds, martialArts = {}, state = null) {
+  const allies = partyIds
+    .map(id => id === 'player'
+      ? buildPlayerCombatant(state, martialArts)
+      : buildCompanionCombatant(id, state))
+    .filter(Boolean);
+  const enemies = enemyIds
+    .map((id, i) => buildEnemyCombatant(id, i, state))
+    .filter(Boolean);
   return { allies, enemies, allyIndex:0, round:1, log:['战斗开始。'], status:'active' };
 }
 
