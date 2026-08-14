@@ -22,8 +22,9 @@ export const CHARACTERS = {
 };
 
 export const SKILLS = {
-  basic_sword: { id:'basic_sword', name:'断风式', type:'招式', power:1.0, desc:'迅捷的一剑，造成100%攻击伤害。' },
-  qi_burst: { id:'qi_burst', name:'聚气破', type:'内功', power:1.45, desc:'运气于掌，造成145%攻击伤害。' },
+  basic_sword: { id:'basic_sword', name:'断风式', type:'招式', power:1.0, desc:'迅捷的一剑，造成100%攻击伤害。', playerLearnable:true },
+  qi_burst: { id:'qi_burst', name:'聚气破', type:'内功', power:1.45, desc:'运气于掌，造成145%攻击伤害。', playerLearnable:true },
+  folding_wind_sword: { id:'folding_wind_sword', name:'折风剑式', type:'招式', power:1.7, desc:'从无名残谱中整理出的三段折返剑路，造成170%攻击伤害。', playerLearnable:true, realmRequirement:'middle_star', masteryMax:5 },
   butterfly_dart: { id:'butterfly_dart', name:'蝶影毒镖', type:'蛊术', power:1.15, desc:'灵巧掷出毒镖，造成115%攻击伤害。' },
   miao_heal: { id:'miao_heal', name:'苗疆灵蛊', type:'秘术', heal:0.32, desc:'为己方生命最低者恢复32%最大生命。' },
   phantom_note: { id:'phantom_note', name:'幻音诀', type:'内功', power:1.65, desc:'以音驭气，造成165%攻击伤害。' },
