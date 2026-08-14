@@ -74,5 +74,12 @@ export function applyRewards(state, rewards = {}) {
       exp: Number.isFinite(current.exp) ? Math.max(0, current.exp) : 0
     };
   }
+  if (rewards.martialArtMastery?.id) {
+    const art = state.martialArts?.[rewards.martialArtMastery.id];
+    if (art?.learned) {
+      const amount = Number.isFinite(rewards.martialArtMastery.amount) ? rewards.martialArtMastery.amount : 1;
+      art.mastery = Math.max(1, (Number.isFinite(art.mastery) ? art.mastery : 1) + amount);
+    }
+  }
   return result;
 }
