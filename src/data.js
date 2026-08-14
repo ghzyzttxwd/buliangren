@@ -12,7 +12,7 @@ export const CHARACTERS = {
   nvdi: {
     id: 'nvdi', name: '女帝', short: '岐', rarity: '幻音坊之主', level: 12,
     maxHp: 188, attack: 39, defense: 18, speed: 21, c1: '#84514f', c2: '#2b171b',
-    skills: ['phantom_note', 'sky_slash'], locked: true, unlock: '推进至岐国篇'
+    skills: ['phantom_note', 'sky_slash']
   },
   jiangchen: {
     id: 'jiangchen', name: '降臣', short: '臣', rarity: '四大尸祖', level: 16,
@@ -46,7 +46,7 @@ export const LOCATIONS = [
   { id:'xuanming', name:'玄冥教势力', icon:'冥', desc:'玄冥教在中原活动的外围势力范围，并非一处可随意闯入的总舵。', unlock:(s)=>unlocked(s,'xuanming') },
   { id:'tongwenguan', name:'通文馆', icon:'文', desc:'晋地大势力通文馆所在。', unlock:(s)=>unlocked(s,'tongwenguan') },
   { id:'qiguo', name:'岐国', icon:'岐', desc:'凤翔一带，幻音坊势力所在。', unlock:(s)=>unlocked(s,'qiguo') },
-  { id:'huanyinfang', name:'幻音坊', icon:'幻', desc:'女帝麾下幻音坊的核心据点。', unlock:(s)=>unlocked(s,'huanyinfang') },
+  { id:'huanyinfang', name:'幻音坊', icon:'幻', desc:'女帝麾下在岐地经营的江湖势力与活动据点。', unlock:(s)=>unlocked(s,'huanyinfang') },
   { id:'taiyuan', name:'太原', icon:'太', desc:'晋地重镇，群雄势力交错。', unlock:(s)=>unlocked(s,'taiyuan') },
   { id:'raojiang', name:'娆疆', icon:'娆', desc:'万毒窟、蛊术与十万大山。', unlock:(s)=>unlocked(s,'raojiang') },
   { id:'mobei', name:'漠北', icon:'漠', desc:'北地风沙漫天，强敌与异族势力盘踞。', unlock:(s)=>unlocked(s,'mobei') },
