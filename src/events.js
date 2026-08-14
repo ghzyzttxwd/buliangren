@@ -37,9 +37,12 @@ function ensureCounters(state) {
   return state.events.counters;
 }
 
-// v0.3 第一季正式内容从新事件 ID 开始。
-// v0.2 的测试事件和 skeleton 完成记录仍可留在旧存档中，但不再作为正式内容显示。
+// v0.3 第一季正式内容使用正式事件 ID。
+// v0.2 的测试事件和 skeleton 完成记录可以继续留在旧存档中，但不再作为正式内容显示。
 export const EVENTS = [
+  // ---------------------------------------------------------------------------
+  // 阶段 B：序章 / 渝州篇
+  // ---------------------------------------------------------------------------
   {
     id: 's1_yuzhou_formal_dark_current',
     season: 1,
@@ -233,6 +236,187 @@ export const EVENTS = [
       { type: 'setChapter', value: 's1_xuanming' }
     ],
     log: '你止步于藏兵谷外围，没有闯入那场不属于你的核心会面。江湖另一边，玄冥教的行动却正在继续扩大。阶段 B 至此收束。'
+  },
+
+  // ---------------------------------------------------------------------------
+  // 阶段 C：玄冥教篇
+  // 原作锚点：搜捕由黑白无常层级升级到五大阎君，并进一步牵动冥帝朱友珪；
+  // 玩家只介入外围压力、情报与局部冲突，不改写玄冥教核心人物的既定命运。
+  // ---------------------------------------------------------------------------
+  {
+    id: 's1_xuanming_formal_hunt_escalates',
+    season: 1,
+    category: 'main',
+    location: 'xuanming',
+    title: '搜捕升级',
+    desc: '剑庐一战之后，玄冥教沿途盘查明显换了层级。普通探子退到外围，更强的人开始接手追踪。',
+    conditions: [
+      { type: 'flagTrue', key: 's1_stage_b_complete' },
+      { type: 'locationUnlocked', location: 'xuanming' },
+      { type: 'eventNotCompleted', event: 's1_xuanming_formal_hunt_escalates' }
+    ],
+    action: { type: 'instant' },
+    rewards: { exp: 18, reputation: 5 },
+    effects: [
+      { type: 'setQuest', value: '查清玄冥教的新动向' }
+    ],
+    log: '你确认玄冥教已经不再把这场追捕当作普通江湖纠纷：封路、眼线和传令都换了更高规格。'
+  },
+  {
+    id: 's1_xuanming_formal_road_pressure',
+    season: 1,
+    category: 'side',
+    location: 'xuanming',
+    title: '驿路封查',
+    desc: '玄冥教扩大搜捕后，一条商旅驿路被反复盘查。当地人开始主动找你帮忙。',
+    retryOnFail: true,
+    conditions: [
+      { type: 'eventCompleted', event: 's1_xuanming_formal_hunt_escalates' },
+      { type: 'eventNotCompleted', event: 's1_xuanming_formal_road_pressure' }
+    ],
+    action: { type: 'battle', enemies: ['scout'] },
+    rewards: { silver: 30, exp: 18, cultivation: 5, reputation: 8 },
+    effects: [],
+    log: '你赶走一拨借搜查之名勒索商旅的玄冥教外围人马。更多人开始把玄冥教的压力与你的名号联系起来。',
+    failureLog: '这条驿路上的玄冥教人手比预料得多，你先把商旅疏散，再另找机会。'
+  },
+  {
+    id: 's1_xuanming_formal_trace_routes',
+    season: 1,
+    category: 'encounter',
+    location: 'xuanming',
+    title: '沿线探查',
+    desc: '避开正面冲突，沿玄冥教传令路线摸清外围动向。本阶段最多获得三次有效收获。',
+    repeatable: true,
+    conditions: [
+      { type: 'eventCompleted', event: 's1_xuanming_formal_hunt_escalates' },
+      { type: 'counterLt', key: 's1_xuanming_trace_uses', value: 3 }
+    ],
+    action: { type: 'instant' },
+    rewards: { exp: 5, cultivation: 3, reputation: 2 },
+    effects: [
+      { type: 'incrementCounter', key: 's1_xuanming_trace_uses', value: 1 }
+    ],
+    log: '你沿玄冥教外围路线探查了一阵，摸清几处哨点和传令规律，也没有惊动真正的高手。'
+  },
+  {
+    id: 's1_xuanming_formal_realm_breakthrough',
+    season: 1,
+    category: 'side',
+    location: 'xuanming',
+    title: '硬闯封锁',
+    desc: '一名玄冥教力士守住山口。达到小星位后，你可以选择直接打穿这处外围封锁。',
+    retryOnFail: true,
+    conditions: [
+      { type: 'eventCompleted', event: 's1_xuanming_formal_hunt_escalates' },
+      { type: 'realmGte', value: 'small_star' },
+      { type: 'eventNotCompleted', event: 's1_xuanming_formal_realm_breakthrough' }
+    ],
+    action: { type: 'battle', enemies: ['guard'] },
+    rewards: { silver: 45, exp: 28, cultivation: 8, reputation: 8 },
+    effects: [
+      { type: 'setFlag', key: 'broke_xuanming_outer_blockade', value: true }
+    ],
+    log: '你正面击退守在山口的玄冥教力士。此事很快传开，但你没有继续深入玄冥教核心据点。',
+    failureLog: '玄冥教力士守势沉重，你退回外围重新观察。这里不是非闯不可的路。'
+  },
+  {
+    id: 's1_xuanming_formal_hidden_conflicting_orders',
+    season: 1,
+    category: 'hidden',
+    location: 'xuanming',
+    title: '两套号令',
+    desc: '渝州那块不起眼的黑牌终于派上用场：同一条玄冥教传令线上，竟出现了两套彼此冲突的暗号。',
+    conditions: [
+      { type: 'eventCompleted', event: 's1_xuanming_formal_hunt_escalates' },
+      { type: 'flagTrue', key: 'found_yuzhou_black_token' },
+      { type: 'cultivationGte', value: 20 },
+      { type: 'eventNotCompleted', event: 's1_xuanming_formal_hidden_conflicting_orders' }
+    ],
+    action: { type: 'instant' },
+    rewards: { exp: 12, cultivation: 8 },
+    effects: [
+      { type: 'setFlag', key: 'noticed_xuanming_internal_fracture', value: true }
+    ],
+    log: '黑牌上的旧暗号与新传令互相矛盾。你只能确认玄冥教内部并非铁板一块，却还不知道真正原因。'
+  },
+  {
+    id: 's1_xuanming_formal_five_judges_pressure',
+    season: 1,
+    category: 'main',
+    location: 'xuanming',
+    title: '阎君压境',
+    desc: '玄冥教对目标的追捕已经由外围探子升级到更高层级。五大阎君的名号开始频繁出现在江湖消息里。',
+    conditions: [
+      { type: 'eventCompleted', event: 's1_xuanming_formal_hunt_escalates' },
+      { type: 'reputationGte', value: 65 },
+      { type: 'eventNotCompleted', event: 's1_xuanming_formal_five_judges_pressure' }
+    ],
+    action: { type: 'instant' },
+    rewards: { exp: 25, reputation: 5 },
+    effects: [
+      { type: 'setQuest', value: '玄冥教内斗的迹象' }
+    ],
+    log: '你确认玄冥教的追捕层级已经升级。与此同时，黑白无常与阎君一系彼此提防的迹象也越来越明显。'
+  },
+  {
+    id: 's1_xuanming_formal_internal_clue_known',
+    season: 1,
+    category: 'hidden',
+    location: 'xuanming',
+    title: '暗号互证',
+    desc: '你把渝州黑牌上的旧暗号与近期传令对照，终于能确认：玄冥教内部存在不止一条彼此牵制的行动线。',
+    conditions: [
+      { type: 'eventCompleted', event: 's1_xuanming_formal_five_judges_pressure' },
+      { type: 'flagTrue', key: 'found_yuzhou_black_token' },
+      { type: 'eventNotCompleted', event: 's1_xuanming_formal_internal_clue_known' }
+    ],
+    action: { type: 'instant' },
+    rewards: { exp: 10 },
+    effects: [
+      { type: 'setFlag', key: 'xuanming_internal_routes_compared', value: true }
+    ],
+    log: '前后两批暗号终于对上了：玄冥教内部正在互相防备。你仍看不清谁在替谁办事，因此没有贸然揭底。'
+  },
+  {
+    id: 's1_xuanming_formal_internal_clue_unknown',
+    season: 1,
+    category: 'side',
+    location: 'xuanming',
+    title: '街巷异样',
+    desc: '你没有掌握更早的暗号，只能从近期动向判断：玄冥教内部的人似乎也在互相监视。',
+    conditions: [
+      { type: 'eventCompleted', event: 's1_xuanming_formal_five_judges_pressure' },
+      { type: 'flagFalse', key: 'found_yuzhou_black_token' },
+      { type: 'eventNotCompleted', event: 's1_xuanming_formal_internal_clue_unknown' }
+    ],
+    action: { type: 'instant' },
+    rewards: { exp: 6 },
+    effects: [],
+    log: '没有旧线索可供比对，你只能从近期的尾随和换岗判断玄冥教内部不太平。更深的原因仍藏在暗处。'
+  },
+  {
+    id: 's1_xuanming_formal_underworld_emperor_enters',
+    season: 1,
+    category: 'main',
+    location: 'xuanming',
+    title: '冥帝入局',
+    desc: '追捕持续升级，玄冥教内部的争斗也不再只是下属之间的私怨。冥帝朱友珪开始真正把目光投向这场棋局。',
+    conditions: [
+      { type: 'eventCompleted', event: 's1_xuanming_formal_five_judges_pressure' },
+      { type: 'reputationGte', value: 75 },
+      { type: 'eventNotCompleted', event: 's1_xuanming_formal_underworld_emperor_enters' }
+    ],
+    action: { type: 'instant' },
+    rewards: { exp: 30, cultivation: 8, reputation: 8 },
+    effects: [
+      { type: 'setFlag', key: 's1_stage_c_complete', value: true },
+      { type: 'unlockLocation', id: 'qiguo' },
+      { type: 'unlockLocation', id: 'huanyinfang' },
+      { type: 'setQuest', value: '幻音坊介入' },
+      { type: 'setChapter', value: 's1_huanyinfang' }
+    ],
+    log: '玄冥教的搜捕与内斗已经上升到更高层级。与此同时，另一股势力也开始围绕李星云与龙泉剑重新部署。玄冥教篇至此收束。'
   }
 ];
 
