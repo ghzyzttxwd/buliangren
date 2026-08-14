@@ -1,86 +1,188 @@
 import { SKILLS } from './data.js';
 import { buildPlayerCombatant, buildCompanionCombatant, buildEnemyCombatant } from './combatants.js';
 
-const alive = (x) => x.hp > 0;
-const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+const alive = unit => unit?.hp > 0;
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+
+function allUnits(battle) {
+  return [...battle.allies, ...battle.enemies];
+}
+
+function compareTurnOrder(a, b) {
+  const speedDiff = (b.speed || 0) - (a.speed || 0);
+  if (Math.abs(speedDiff) > 0.0001) return speedDiff;
+  if (a.side !== b.side) return a.side === 'ally' ? -1 : 1;
+  return (a._battleOrder || 0) - (b._battleOrder || 0);
+}
+
+function rebuildTurnOrder(battle) {
+  battle.turnOrder = allUnits(battle).filter(alive).sort(compareTurnOrder);
+  battle.turnIndex = 0;
+  syncAllyIndex(battle);
+  return battle;
+}
+
+function syncAllyIndex(battle) {
+  const actor = getCurrentActor(battle);
+  battle.allyIndex = actor?.side === 'ally' ? battle.allies.indexOf(actor) : -1;
+}
+
+export function getCurrentActor(battle) {
+  if (!battle || battle.status !== 'active') return null;
+  return battle.turnOrder?.[battle.turnIndex] || null;
+}
 
 export function createBattle(enemyIds, partyIds, martialArts = {}, state = null) {
   const allies = partyIds
     .map(id => id === 'player'
       ? buildPlayerCombatant(state, martialArts)
       : buildCompanionCombatant(id, state))
-    .filter(Boolean);
+    .filter(Boolean)
+    .map((unit, index) => ({ ...unit, _battleOrder: index }));
   const enemies = enemyIds
     .map((id, i) => buildEnemyCombatant(id, i, state))
-    .filter(Boolean);
-  return { allies, enemies, allyIndex:0, round:1, log:['战斗开始。'], status:'active' };
+    .filter(Boolean)
+    .map((unit, index) => ({ ...unit, _battleOrder: allies.length + index }));
+
+  const battle = {
+    allies,
+    enemies,
+    allyIndex: 0,
+    turnOrder: [],
+    turnIndex: 0,
+    round: 1,
+    log: ['战斗开始。'],
+    status: 'active'
+  };
+
+  rebuildTurnOrder(battle);
+  return resolveEnemyTurns(battle);
 }
 
-function damage(attacker, defender, power=1) {
+function damage(attacker, defender, power = 1) {
   const variance = .92 + Math.random() * .16;
   const raw = attacker.attack * power * variance - defender.defense * .55;
   return Math.max(1, Math.round(raw));
 }
 
 function lowestHpAlly(allies) {
-  return [...allies].filter(alive).sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp))[0];
+  return [...allies].filter(alive).sort((a, b) => (a.hp / a.maxHp) - (b.hp / b.maxHp))[0];
+}
+
+function firstAliveEnemy(battle) {
+  return battle.enemies.find(alive);
+}
+
+function finish(battle, status) {
+  battle.status = status;
+  battle.allyIndex = -1;
+  battle.log.push(status === 'win' ? '敌人已尽数败退。' : '你眼前一黑，只得暂避锋芒。');
+  return battle;
+}
+
+function checkBattleEnd(battle) {
+  if (!battle.enemies.some(alive)) return finish(battle, 'win');
+  if (!battle.allies.some(alive)) return finish(battle, 'lose');
+  return battle;
+}
+
+function applyBasicAttack(battle, actor) {
+  if (!actor || !alive(actor)) return battle;
+  const target = actor.side === 'ally'
+    ? firstAliveEnemy(battle)
+    : pick(battle.allies.filter(alive));
+  if (!target) return checkBattleEnd(battle);
+
+  const amount = damage(actor, target, 1);
+  target.hp = Math.max(0, target.hp - amount);
+  battle.log.push(`${actor.name}普通攻击${target.name}，造成 ${amount} 点伤害。`);
+  if (!alive(target)) {
+    battle.log.push(actor.side === 'ally' ? `${target.name}倒下了。` : `${target.name}暂时失去战斗能力。`);
+  }
+  return checkBattleEnd(battle);
+}
+
+function advanceTurnPointer(battle) {
+  if (battle.status !== 'active') return battle;
+  battle.turnIndex += 1;
+
+  while (battle.status === 'active') {
+    while (battle.turnIndex < battle.turnOrder.length && !alive(battle.turnOrder[battle.turnIndex])) {
+      battle.turnIndex += 1;
+    }
+    if (battle.turnIndex < battle.turnOrder.length) break;
+
+    battle.round += 1;
+    rebuildTurnOrder(battle);
+    if (!battle.turnOrder.length) return checkBattleEnd(battle);
+    break;
+  }
+
+  syncAllyIndex(battle);
+  return battle;
+}
+
+function resolveEnemyTurns(battle) {
+  while (battle.status === 'active') {
+    const actor = getCurrentActor(battle);
+    if (!actor) {
+      checkBattleEnd(battle);
+      if (battle.status !== 'active') return battle;
+      rebuildTurnOrder(battle);
+      continue;
+    }
+    if (actor.side === 'ally') {
+      syncAllyIndex(battle);
+      return battle;
+    }
+
+    applyBasicAttack(battle, actor);
+    if (battle.status !== 'active') return battle;
+    advanceTurnPointer(battle);
+  }
+  return battle;
+}
+
+function finishAllyAction(battle) {
+  if (battle.status !== 'active') return battle;
+  advanceTurnPointer(battle);
+  return resolveEnemyTurns(battle);
+}
+
+export function basicAttack(battle) {
+  if (battle?.status !== 'active') return battle;
+  const actor = getCurrentActor(battle);
+  if (!actor || actor.side !== 'ally' || !alive(actor)) return battle;
+
+  applyBasicAttack(battle, actor);
+  if (battle.status !== 'active') return battle;
+  return finishAllyAction(battle);
 }
 
 export function useSkill(battle, skillId) {
-  if (battle.status !== 'active') return battle;
-  const actor = battle.allies[battle.allyIndex];
-  if (!actor || !alive(actor)) return advanceAlly(battle);
+  if (battle?.status !== 'active') return battle;
+  const actor = getCurrentActor(battle);
+  if (!actor || actor.side !== 'ally' || !alive(actor)) return battle;
   const skill = SKILLS[skillId];
   if (!skill || !actor.skills.includes(skillId)) return battle;
 
   if (skill.heal) {
     const target = lowestHpAlly(battle.allies);
+    if (!target) return battle;
     const amount = Math.max(1, Math.round(target.maxHp * skill.heal));
     const actual = Math.min(amount, target.maxHp - target.hp);
     target.hp += actual;
     battle.log.push(`${actor.name}施展【${skill.name}】，${target.name}恢复 ${actual} 点气血。`);
   } else {
-    const target = battle.enemies.find(alive);
+    const target = firstAliveEnemy(battle);
     if (!target) return finish(battle, 'win');
     const amount = damage(actor, target, skill.power || 1);
     target.hp = Math.max(0, target.hp - amount);
     battle.log.push(`${actor.name}施展【${skill.name}】，对${target.name}造成 ${amount} 点伤害。`);
     if (!alive(target)) battle.log.push(`${target.name}倒下了。`);
   }
-  if (!battle.enemies.some(alive)) return finish(battle,'win');
-  return advanceAlly(battle);
-}
 
-function advanceAlly(battle) {
-  let idx = battle.allyIndex + 1;
-  while (idx < battle.allies.length && !alive(battle.allies[idx])) idx++;
-  if (idx < battle.allies.length) {
-    battle.allyIndex = idx;
-    return battle;
-  }
-  enemyTurn(battle);
+  checkBattleEnd(battle);
   if (battle.status !== 'active') return battle;
-  battle.round += 1;
-  battle.allyIndex = 0;
-  while (battle.allyIndex < battle.allies.length && !alive(battle.allies[battle.allyIndex])) battle.allyIndex++;
-  return battle;
-}
-
-function enemyTurn(battle) {
-  for (const enemy of battle.enemies.filter(alive)) {
-    const targets = battle.allies.filter(alive);
-    if (!targets.length) return finish(battle,'lose');
-    const target = pick(targets);
-    const amount = damage(enemy, target, 1);
-    target.hp = Math.max(0, target.hp - amount);
-    battle.log.push(`${enemy.name}攻击${target.name}，造成 ${amount} 点伤害。`);
-    if (!alive(target)) battle.log.push(`${target.name}暂时失去战斗能力。`);
-  }
-  if (!battle.allies.some(alive)) finish(battle,'lose');
-}
-
-function finish(battle,status) {
-  battle.status = status;
-  battle.log.push(status === 'win' ? '敌人已尽数败退。' : '你眼前一黑，只得暂避锋芒。');
-  return battle;
+  return finishAllyAction(battle);
 }
