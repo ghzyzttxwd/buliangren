@@ -29,282 +29,210 @@ function removeValue(array, value) {
   if (index >= 0) array.splice(index, 1);
 }
 
+function ensureCounters(state) {
+  if (!state.events) state.events = { completed: [], failed: [], active: [], counters: {} };
+  if (!state.events.counters || typeof state.events.counters !== 'object' || Array.isArray(state.events.counters)) {
+    state.events.counters = {};
+  }
+  return state.events.counters;
+}
+
+// v0.3 第一季正式内容从新事件 ID 开始。
+// v0.2 的测试事件和 skeleton 完成记录仍可留在旧存档中，但不再作为正式内容显示。
 export const EVENTS = [
   {
-    id: 's1_yuzhou_scout',
+    id: 's1_yuzhou_formal_dark_current',
     season: 1,
     category: 'main',
     location: 'yuzhou',
-    title: '驿道疑云',
-    desc: '城南驿道发现玄冥教踪迹。',
+    title: '渝州暗潮',
+    desc: '城外盘查突然加严。玄冥教的人似乎在追踪另一批刚入江湖的年轻人。',
     retryOnFail: true,
-    conditions: [{ type: 'flagFalse', key: 'scoutDefeated' }],
+    conditions: [
+      { type: 'eventNotCompleted', event: 's1_yuzhou_formal_dark_current' }
+    ],
     action: { type: 'battle', enemies: ['scout'] },
-    rewards: { silver: 60, exp: 35, cultivation: 10, reputation: 20 },
+    rewards: { silver: 40, exp: 20, cultivation: 5, reputation: 15 },
     effects: [
-      { type: 'setFlag', key: 'scoutDefeated', value: true },
-      { type: 'unlockLocation', id: 'cangbing' },
-      { type: 'setQuest', value: '旧谷暗号' },
+      { type: 'setQuest', value: '渝州风声' },
       { type: 'setChapter', value: 's1_yuzhou' }
     ],
-    log: '你与蚩梦击退玄冥教探子，搜到指向藏兵谷的旧暗号。',
-    failureLog: '你暂时没能拿下玄冥教探子，只得先退回渝州整顿。'
+    log: '你击退一名在商路上横行的玄冥教探子，也确认这场大规模搜查真正追逐的另有其人。',
+    failureLog: '玄冥教探子人数占优，你暂时退回渝州，准备另寻机会。'
   },
   {
-    id: 's1_yuzhou_training',
+    id: 's1_yuzhou_formal_inn_rumor',
+    season: 1,
+    category: 'side',
+    location: 'yuzhou',
+    title: '客栈里的风声',
+    desc: '商旅都在议论城外的盘查。有人提到，玄冥教正在寻找一对年轻江湖人。',
+    conditions: [
+      { type: 'eventCompleted', event: 's1_yuzhou_formal_dark_current' },
+      { type: 'reputationGte', value: 15 },
+      { type: 'eventNotCompleted', event: 's1_yuzhou_formal_inn_rumor' }
+    ],
+    action: { type: 'instant' },
+    rewards: { exp: 8, reputation: 5 },
+    effects: [],
+    log: '你从几拨商旅的说法里拼出同一件事：玄冥教的搜查目标是一对刚刚踏入江湖的年轻人。'
+  },
+  {
+    id: 's1_yuzhou_formal_road_relief',
+    season: 1,
+    category: 'side',
+    location: 'yuzhou',
+    title: '封路后的商队',
+    desc: '玄冥教封路搜人，一支商队被困在城外。帮他们脱身，也许能换来些江湖名声。',
+    retryOnFail: true,
+    conditions: [
+      { type: 'eventCompleted', event: 's1_yuzhou_formal_dark_current' },
+      { type: 'eventNotCompleted', event: 's1_yuzhou_formal_road_relief' }
+    ],
+    action: { type: 'battle', enemies: ['scout'] },
+    rewards: { silver: 35, exp: 18, cultivation: 5, reputation: 10 },
+    effects: [],
+    log: '你替受困商队赶走了拦路的玄冥教探子。渝州来往的商旅开始记住你的名号。',
+    failureLog: '你没能冲开玄冥教的封锁，只得先让商队退回安全处。'
+  },
+  {
+    id: 's1_yuzhou_formal_training',
     season: 1,
     category: 'encounter',
     location: 'yuzhou',
     title: '城外练功',
-    desc: '寻一处僻静之地打熬筋骨，积蓄修为。',
+    desc: '趁江湖风波尚未逼到眼前，找一处僻静地打熬筋骨。本阶段只有前五次能获得有效进益。',
     repeatable: true,
-    conditions: [],
+    conditions: [
+      { type: 'eventCompleted', event: 's1_yuzhou_formal_dark_current' },
+      { type: 'counterLt', key: 's1_yuzhou_training_uses', value: 5 }
+    ],
     action: { type: 'instant' },
     rewards: { cultivation: 5, exp: 4 },
-    effects: [],
-    log: '你在渝州城外练了一阵功，气息比先前凝实了几分。'
+    effects: [
+      { type: 'incrementCounter', key: 's1_yuzhou_training_uses', value: 1 }
+    ],
+    log: '你在渝州城外静心练了一阵，气息比先前凝实了一分。'
   },
   {
-    id: 's1_yuzhou_rumor',
+    id: 's1_yuzhou_formal_chimeng_01',
+    season: 1,
+    category: 'character',
+    location: 'yuzhou',
+    title: '蚩梦的判断',
+    desc: '蚩梦观察了几日，觉得玄冥教这次闹出的动静远比追你们两个人更大。',
+    conditions: [
+      { type: 'eventCompleted', event: 's1_yuzhou_formal_dark_current' },
+      { type: 'affinityGte', character: 'chimeng', value: 20 },
+      { type: 'eventNotCompleted', event: 's1_yuzhou_formal_chimeng_01' }
+    ],
+    action: { type: 'instant' },
+    rewards: { exp: 5 },
+    effects: [
+      { type: 'changeAffinity', character: 'chimeng', value: 5 },
+      { type: 'setPersonalFlag', character: 'chimeng', key: 'recognized_bigger_hunt', value: true }
+    ],
+    log: '蚩梦判断玄冥教真正盯上的另有其人。你们决定先看清这场风波，再决定卷进去多深。'
+  },
+  {
+    id: 's1_yuzhou_formal_hidden_black_token',
+    season: 1,
+    category: 'hidden',
+    location: 'yuzhou',
+    title: '沟渠里的黑牌',
+    desc: '雨后沟渠里露出一角乌黑木牌。只有在名声尚未传开时，你才有机会安静追查这条不起眼的线索。',
+    conditions: [
+      { type: 'eventCompleted', event: 's1_yuzhou_formal_dark_current' },
+      { type: 'cultivationGte', value: 10 },
+      { type: 'reputationLte', value: 25 },
+      { type: 'eventNotCompleted', event: 's1_yuzhou_formal_hidden_black_token' }
+    ],
+    action: { type: 'instant' },
+    rewards: { exp: 8, cultivation: 8 },
+    effects: [
+      { type: 'setFlag', key: 'found_yuzhou_black_token', value: true }
+    ],
+    log: '你从一块不起眼的黑牌上确认：玄冥教在渝州周边布置了不止一条搜查路线。这条发现没有惊动任何人。'
+  },
+  {
+    id: 's1_yuzhou_formal_crossing',
+    season: 1,
+    category: 'main',
+    location: 'yuzhou',
+    title: '被追逐的年轻人',
+    desc: '你的名声让更多消息主动找上门。玄冥教真正追逐的年轻人，终于从传闻变成近在眼前的江湖风波。',
+    conditions: [
+      { type: 'eventCompleted', event: 's1_yuzhou_formal_dark_current' },
+      { type: 'reputationGte', value: 30 },
+      { type: 'eventNotCompleted', event: 's1_yuzhou_formal_crossing' }
+    ],
+    action: { type: 'instant' },
+    rewards: { exp: 25, cultivation: 5, reputation: 10 },
+    effects: [
+      { type: 'setQuest', value: '追查剑庐方向' }
+    ],
+    log: '你在一场外围追逐中确认了玄冥教的真正目标。那名年轻人与同行很快脱离视线，而你只来得及处理追兵留下的余波。'
+  },
+  {
+    id: 's1_yuzhou_formal_night_watch',
     season: 1,
     category: 'side',
     location: 'yuzhou',
-    title: '客栈传闻',
-    desc: '你的名声传开后，客栈里有人主动谈起玄冥教的异动。',
+    title: '城门夜巡',
+    desc: '那场追逐之后仍有玄冥教散兵在城外搜人。城门附近的百姓不敢夜行。',
+    retryOnFail: true,
     conditions: [
-      { type: 'reputationGte', value: 20 },
-      { type: 'eventNotCompleted', event: 's1_yuzhou_rumor' }
+      { type: 'eventCompleted', event: 's1_yuzhou_formal_crossing' },
+      { type: 'eventNotCompleted', event: 's1_yuzhou_formal_night_watch' }
     ],
-    action: { type: 'instant' },
-    rewards: { cultivation: 5 },
-    effects: [{ type: 'setFlag', key: 'heard_xuanming_rumor', value: true }],
-    log: '你从客栈行商口中听到：近日有玄冥教高手往西而去。'
+    action: { type: 'battle', enemies: ['scout'] },
+    rewards: { silver: 25, exp: 15, cultivation: 5, reputation: 5 },
+    effects: [],
+    log: '你清掉了城门外一拨仍在搜人的玄冥教散兵。第二天，关于剑庐方向大战的消息开始传来。',
+    failureLog: '城外搜人的玄冥教散兵比预想中难缠，你暂时退回城内。'
   },
   {
-    id: 's1_chimeng_chat_01',
+    id: 's1_yuzhou_formal_swordhut_aftershock',
     season: 1,
-    category: 'character',
+    category: 'main',
     location: 'yuzhou',
-    title: '蚩梦的试探',
-    desc: '蚩梦似乎有话想说，却故意绕着弯子。',
+    title: '剑庐火光',
+    desc: '剑庐方向传来大战后的消息。玄冥教高手已经介入，那名被追逐的年轻人也从公开视线中消失。',
     conditions: [
-      { type: 'affinityGte', character: 'chimeng', value: 20 },
-      { type: 'eventNotCompleted', event: 's1_chimeng_chat_01' }
+      { type: 'eventCompleted', event: 's1_yuzhou_formal_crossing' },
+      { type: 'reputationGte', value: 45 },
+      { type: 'eventNotCompleted', event: 's1_yuzhou_formal_swordhut_aftershock' }
     ],
     action: { type: 'instant' },
-    rewards: {},
-    effects: [{ type: 'changeAffinity', character: 'chimeng', value: 5 }],
-    log: '你没有拆穿蚩梦拐弯抹角的试探，她对你的态度明显亲近了一些。'
-  },
-  {
-    id: 's1_chimeng_chat_02',
-    season: 1,
-    category: 'character',
-    location: 'yuzhou',
-    title: '蚩梦的认真话',
-    desc: '经过上一次交谈，蚩梦终于愿意把真正担心的事情告诉你。',
-    conditions: [
-      { type: 'eventCompleted', event: 's1_chimeng_chat_01' },
-      { type: 'affinityGte', character: 'chimeng', value: 25 },
-      { type: 'eventNotCompleted', event: 's1_chimeng_chat_02' }
-    ],
-    action: { type: 'instant' },
-    rewards: {},
+    rewards: { exp: 25, reputation: 5 },
     effects: [
-      { type: 'changeAffinity', character: 'chimeng', value: 5 },
-      { type: 'setPersonalFlag', character: 'chimeng', key: 'shared_real_concern', value: true }
+      { type: 'unlockLocation', id: 'cangbing' },
+      { type: 'setQuest', value: '谷外封路' }
     ],
-    log: '蚩梦收起玩笑，第一次认真向你说起自己真正担心的事。你们之间的信任更深了一层。'
+    log: '你赶到时，剑庐的核心战斗早已结束。留下的痕迹表明，玄冥教高手曾在这里围攻目标，而重伤者随后被另一股隐藏力量带走。'
   },
   {
-    id: 's1_cangbing_mark',
+    id: 's1_yuzhou_formal_cangbing_outer',
     season: 1,
     category: 'main',
     location: 'cangbing',
-    title: '石壁旧印',
-    desc: '调查石壁上的不良人暗记。',
+    title: '谷外封路',
+    desc: '线索最终停在藏兵谷外围。谷内有人刻意封住消息，你能确认局势已经被更深的一股力量接手。',
     conditions: [
+      { type: 'eventCompleted', event: 's1_yuzhou_formal_swordhut_aftershock' },
       { type: 'locationUnlocked', location: 'cangbing' },
-      { type: 'flagFalse', key: 'cangbingVisited' }
+      { type: 'reputationGte', value: 50 },
+      { type: 'eventNotCompleted', event: 's1_yuzhou_formal_cangbing_outer' }
     ],
     action: { type: 'instant' },
-    rewards: { silver: 30, reputation: 5 },
+    rewards: { exp: 20, reputation: 5 },
     effects: [
-      { type: 'setFlag', key: 'cangbingVisited', value: true },
-      { type: 'setChapter', value: 's1_yuzhou' }
-    ],
-    log: '你在藏兵谷石壁发现不良人暗记。蚩梦认出其中藏着一个“岐”字。'
-  },
-  {
-    id: 's1_cangbing_guard',
-    season: 1,
-    category: 'encounter',
-    location: 'cangbing',
-    title: '深入谷口',
-    desc: '玄冥教力士守在谷口深处。',
-    retryOnFail: true,
-    conditions: [
-      { type: 'locationUnlocked', location: 'cangbing' },
-      { type: 'flagTrue', key: 'cangbingVisited' },
-      { type: 'flagFalse', key: 'cangbingGuardDefeated' }
-    ],
-    action: { type: 'battle', enemies: ['guard'] },
-    rewards: { silver: 90, exp: 55, cultivation: 15, reputation: 15 },
-    effects: [
-      { type: 'setFlag', key: 'cangbingGuardDefeated', value: true },
       { type: 'unlockLocation', id: 'xuanming' },
+      { type: 'setFlag', key: 's1_stage_b_complete', value: true },
       { type: 'setQuest', value: '玄冥暗流' },
       { type: 'setChapter', value: 's1_xuanming' }
     ],
-    log: '你击退藏兵谷口的玄冥教力士，顺着留下的线索摸到了玄冥教势力活动的方向。',
-    failureLog: '玄冥教力士守势沉重，你暂时退回谷外。'
-  },
-
-  // 第一季骨架：以下节点只验证章节推进、地点解锁与人物关系，不代表正式剧情文本。
-  {
-    id: 's1_xuanming_skeleton',
-    season: 1,
-    category: 'main',
-    location: 'xuanming',
-    title: '玄冥暗流',
-    desc: '你沿着藏兵谷留下的线索，确认玄冥教正在追逐一条足以惊动多方势力的消息。',
-    conditions: [
-      { type: 'flagTrue', key: 'cangbingGuardDefeated' },
-      { type: 'eventNotCompleted', event: 's1_xuanming_skeleton' }
-    ],
-    action: { type: 'instant' },
-    rewards: { exp: 20, reputation: 10 },
-    effects: [
-      { type: 'unlockLocation', id: 'qiguo' },
-      { type: 'unlockLocation', id: 'huanyinfang' },
-      { type: 'setFlag', key: 's1_xuanming_node_done', value: true },
-      { type: 'setQuest', value: '岐地来人' },
-      { type: 'setChapter', value: 's1_huanyinfang' }
-    ],
-    log: '玄冥教的动作惊动了岐地势力。第一季骨架推进至【幻音坊】节点。'
-  },
-  {
-    id: 's1_huanyinfang_skeleton',
-    season: 1,
-    category: 'main',
-    location: 'huanyinfang',
-    title: '岐地来人',
-    desc: '幻音坊开始介入这场争夺。你第一次真正进入女帝所在势力的视线。',
-    conditions: [
-      { type: 'eventCompleted', event: 's1_xuanming_skeleton' },
-      { type: 'eventNotCompleted', event: 's1_huanyinfang_skeleton' }
-    ],
-    action: { type: 'instant' },
-    rewards: { exp: 20, reputation: 10 },
-    effects: [
-      { type: 'setCharacterMet', character: 'nvdi', value: true },
-      { type: 'unlockLocation', id: 'tongwenguan' },
-      { type: 'setFlag', key: 's1_huanyinfang_node_done', value: true },
-      { type: 'setQuest', value: '晋地风声' },
-      { type: 'setChapter', value: 's1_tongwenguan' }
-    ],
-    log: '你与幻音坊势力正式产生交集，女帝人物关系已进入“相识”状态。第一季骨架推进至【通文馆】节点。'
-  },
-  {
-    id: 's1_tongwenguan_skeleton',
-    season: 1,
-    category: 'main',
-    location: 'tongwenguan',
-    title: '晋地风声',
-    desc: '通文馆也卷入局中，多方线索开始共同指向龙泉相关秘密。',
-    conditions: [
-      { type: 'eventCompleted', event: 's1_huanyinfang_skeleton' },
-      { type: 'eventNotCompleted', event: 's1_tongwenguan_skeleton' }
-    ],
-    action: { type: 'instant' },
-    rewards: { exp: 25, cultivation: 10, reputation: 10 },
-    effects: [
-      { type: 'unlockLocation', id: 'longquan' },
-      { type: 'setFlag', key: 's1_tongwenguan_node_done', value: true },
-      { type: 'setQuest', value: '龙泉线索' },
-      { type: 'setChapter', value: 's1_longquan' }
-    ],
-    log: '通文馆的情报与此前线索互相印证，龙泉相关秘密浮出水面。第一季骨架推进至【龙泉】节点。'
-  },
-  {
-    id: 's1_longquan_skeleton',
-    season: 1,
-    category: 'main',
-    location: 'longquan',
-    title: '龙泉线索',
-    desc: '几股势力的线索终于在此交汇。正式剧情将在内容填充阶段补足人物冲突与细节。',
-    conditions: [
-      { type: 'eventCompleted', event: 's1_tongwenguan_skeleton' },
-      { type: 'eventNotCompleted', event: 's1_longquan_skeleton' }
-    ],
-    action: { type: 'instant' },
-    rewards: { exp: 30, cultivation: 10, reputation: 15 },
-    effects: [
-      { type: 'setFlag', key: 's1_longquan_node_done', value: true },
-      { type: 'setFlag', key: 's1_finale_ready', value: true },
-      { type: 'setQuest', value: '第一季终局' },
-      { type: 'setChapter', value: 's1_finale' }
-    ],
-    log: '龙泉线索完成汇合，第一季终局节点已经开启。'
-  },
-  {
-    id: 's1_finale_skeleton',
-    season: 1,
-    category: 'main',
-    location: 'longquan',
-    title: '第一季终局·骨架验收',
-    desc: '这是第一季终局的结构占位节点，只用于验证整季主线可以从序章一路跑通。',
-    conditions: [
-      { type: 'flagTrue', key: 's1_finale_ready' },
-      { type: 'eventNotCompleted', event: 's1_finale_skeleton' }
-    ],
-    action: { type: 'instant' },
-    rewards: { exp: 40, cultivation: 20, reputation: 20 },
-    effects: [
-      { type: 'setFlag', key: 'season1SkeletonComplete', value: true },
-      { type: 'setFlag', key: 'chapter1Done', value: true },
-      { type: 'setQuest', value: '第一季骨架完成' },
-      { type: 'setChapter', value: 's1_finale' }
-    ],
-    log: '第一季主线骨架已完整跑通。后续进入正式内容填充时，再替换各节点的占位剧情。'
-  },
-
-  {
-    id: 's1_hidden_stranger',
-    season: 1,
-    category: 'hidden',
-    location: 'yuzhou',
-    title: '山道上的陌生人',
-    desc: '一名看不出深浅的陌生人站在山道尽头。',
-    conditions: [
-      { type: 'realmGte', value: 'small_star' },
-      { type: 'reputationLte', value: 40 },
-      { type: 'eventNotCompleted', event: 's1_hidden_stranger' }
-    ],
-    action: { type: 'instant' },
-    rewards: { cultivation: 20 },
-    effects: [{ type: 'setFlag', key: 'met_hidden_stranger', value: true }],
-    log: '陌生人只与你过了一招便收手，临走前说：“星位，不过是入门。”'
-  },
-  {
-    id: 's1_hidden_abandoned_post',
-    season: 1,
-    category: 'hidden',
-    location: 'yuzhou',
-    title: '废驿下的铜牌',
-    desc: '听过客栈传闻后，你在城西废驿发现了一块被泥土掩住的旧铜牌。',
-    conditions: [
-      { type: 'flagTrue', key: 'heard_xuanming_rumor' },
-      { type: 'realmGte', value: 'small_star' },
-      { type: 'eventNotCompleted', event: 's1_hidden_abandoned_post' }
-    ],
-    action: { type: 'instant' },
-    rewards: { cultivation: 10 },
-    effects: [
-      { type: 'addItem', item: 'old_coin', count: 1 },
-      { type: 'setFlag', key: 'found_abandoned_post_token', value: true }
-    ],
-    log: '你在废驿梁柱下翻出一块旧铜牌，纹路与玄冥教近期的行踪似乎有关。'
+    log: '你止步于藏兵谷外围，没有闯入那场不属于你的核心会面。江湖另一边，玄冥教的行动却正在继续扩大。阶段 B 至此收束。'
   }
 ];
 
@@ -377,6 +305,13 @@ function applyEffect(state, effect) {
     case 'removeItem':
       state.inventory.items[effect.item] = Math.max(0, (state.inventory.items[effect.item] || 0) - (effect.count || 1));
       break;
+    case 'incrementCounter': {
+      const counters = ensureCounters(state);
+      const current = Number.isFinite(counters[effect.key]) ? counters[effect.key] : 0;
+      const amount = Number.isFinite(effect.value) ? effect.value : 1;
+      counters[effect.key] = Math.max(0, current + amount);
+      break;
+    }
   }
 }
 
