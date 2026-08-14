@@ -17,6 +17,7 @@ export function checkCondition(condition, state) {
     case 'levelGte': return (state?.player?.level ?? 1) >= c.value;
     case 'realmGte': return getRealm(state?.player?.realm).order >= getRealm(c.value).order;
     case 'cultivationGte': return (state?.player?.cultivation ?? 0) >= c.value;
+    case 'silverGte': return (state?.player?.silver ?? 0) >= c.value;
     case 'flagTrue': return state?.world?.flags?.[c.key] === true;
     case 'flagFalse': return state?.world?.flags?.[c.key] !== true;
     case 'eventCompleted': return list(state, 'completed').includes(c.event);
