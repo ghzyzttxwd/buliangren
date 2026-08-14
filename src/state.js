@@ -7,6 +7,15 @@ function martialArt(learned = true, mastery = 1, exp = 0) {
   return { learned, mastery, exp };
 }
 
+function isPlainObject(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function finiteNumber(value, fallback, min = -Infinity, max = Infinity) {
+  if (!Number.isFinite(value)) return fallback;
+  return Math.max(min, Math.min(max, value));
+}
+
 function relationStage(rel = {}) {
   if (!rel.met) return 'unknown';
   const value = Number.isFinite(rel.affinity) ? rel.affinity : 0;
@@ -18,16 +27,15 @@ function relationStage(rel = {}) {
   return 'hostile';
 }
 
-function normalizeRelationships(relationships = {}) {
-  for (const rel of Object.values(relationships)) {
-    if (!rel || typeof rel !== 'object') continue;
-    rel.affinity = Math.max(-100, Math.min(100, Number.isFinite(rel.affinity) ? rel.affinity : 0));
-    rel.relationStage = relationStage(rel);
-    if (!rel.personalFlags || typeof rel.personalFlags !== 'object' || Array.isArray(rel.personalFlags)) {
-      rel.personalFlags = {};
-    }
+function deepMerge(base, incoming) {
+  if (!isPlainObject(incoming)) return base;
+  const out = { ...base };
+  for (const [key, value] of Object.entries(incoming)) {
+    if (Array.isArray(value)) out[key] = [...value];
+    else if (isPlainObject(value) && isPlainObject(base[key])) out[key] = deepMerge(base[key], value);
+    else if (value !== undefined) out[key] = value;
   }
-  return relationships;
+  return out;
 }
 
 export function defaultState() {
@@ -81,19 +89,55 @@ export function defaultState() {
   };
 }
 
-function isPlainObject(value) {
-  return value && typeof value === 'object' && !Array.isArray(value);
+function normalizeRelationships(input, defaults) {
+  const relationships = isPlainObject(input) ? deepMerge(defaults, input) : deepMerge({}, defaults);
+  for (const [id, fallback] of Object.entries(defaults)) {
+    const rel = isPlainObject(relationships[id]) ? relationships[id] : { ...fallback };
+    rel.met = rel.met === true;
+    rel.affinity = finiteNumber(rel.affinity, fallback.affinity, -100, 100);
+    rel.personalFlags = isPlainObject(rel.personalFlags) ? rel.personalFlags : {};
+    rel.relationStage = relationStage(rel);
+    relationships[id] = rel;
+  }
+  return relationships;
 }
 
-function deepMerge(base, incoming) {
-  if (!isPlainObject(incoming)) return base;
-  const out = { ...base };
-  for (const [key, value] of Object.entries(incoming)) {
-    if (Array.isArray(value)) out[key] = [...value];
-    else if (isPlainObject(value) && isPlainObject(base[key])) out[key] = deepMerge(base[key], value);
-    else if (value !== undefined) out[key] = value;
+function normalizeMartialArts(input, defaults) {
+  const source = isPlainObject(input) ? input : {};
+  const result = {};
+  for (const [id, value] of Object.entries({ ...defaults, ...source })) {
+    const fallback = defaults[id] || martialArt(false, 1, 0);
+    const art = isPlainObject(value) ? value : fallback;
+    result[id] = {
+      learned: art.learned === true,
+      mastery: finiteNumber(art.mastery, fallback.mastery ?? 1, 1, 999),
+      exp: finiteNumber(art.exp, fallback.exp ?? 0, 0)
+    };
   }
-  return out;
+  return result;
+}
+
+function normalizeInventory(input, defaults) {
+  const inventory = isPlainObject(input) ? deepMerge(defaults, input) : deepMerge({}, defaults);
+  inventory.items = isPlainObject(inventory.items) ? inventory.items : { ...defaults.items };
+  for (const [id, count] of Object.entries(inventory.items)) {
+    inventory.items[id] = finiteNumber(count, 0, 0);
+  }
+  inventory.equipment = isPlainObject(inventory.equipment)
+    ? deepMerge(defaults.equipment, inventory.equipment)
+    : { ...defaults.equipment };
+  return inventory;
+}
+
+function normalizeEvents(input, defaults) {
+  const events = isPlainObject(input) ? deepMerge(defaults, input) : deepMerge({}, defaults);
+  for (const key of ['completed', 'failed', 'active']) {
+    events[key] = Array.isArray(events[key])
+      ? [...new Set(events[key].filter(value => typeof value === 'string'))]
+      : [];
+  }
+  events.counters = isPlainObject(events.counters) ? events.counters : {};
+  return events;
 }
 
 function unlock(state, id) {
@@ -101,10 +145,49 @@ function unlock(state, id) {
 }
 
 function normalizeV2(raw) {
-  const state = deepMerge(defaultState(), raw);
+  const defaults = defaultState();
+  const source = isPlainObject(raw) ? raw : {};
+  const state = deepMerge(defaults, source);
+
   state.saveVersion = SAVE_VERSION;
   state.gameVersion = GAME_VERSION;
-  state.world.unlockedLocations = [...new Set(['yuzhou', ...(state.world.unlockedLocations || [])])];
+
+  state.player = isPlainObject(state.player) ? deepMerge(defaults.player, state.player) : { ...defaults.player };
+  state.player.name = typeof state.player.name === 'string' && state.player.name.trim() ? state.player.name : defaults.player.name;
+  state.player.level = Math.floor(finiteNumber(state.player.level, defaults.player.level, 1, 999));
+  state.player.exp = finiteNumber(state.player.exp, defaults.player.exp, 0);
+  state.player.cultivation = finiteNumber(state.player.cultivation, defaults.player.cultivation, 0);
+  state.player.realm = typeof state.player.realm === 'string' ? state.player.realm : defaults.player.realm;
+  state.player.silver = finiteNumber(state.player.silver, defaults.player.silver, 0);
+  state.player.maxStamina = finiteNumber(state.player.maxStamina, defaults.player.maxStamina, 1);
+  state.player.stamina = finiteNumber(state.player.stamina, defaults.player.stamina, 0, state.player.maxStamina);
+
+  state.world = isPlainObject(state.world) ? deepMerge(defaults.world, state.world) : deepMerge({}, defaults.world);
+  state.world.season = Math.floor(finiteNumber(state.world.season, defaults.world.season, 1, 99));
+  state.world.chapter = typeof state.world.chapter === 'string' ? state.world.chapter : defaults.world.chapter;
+  state.world.reputation = finiteNumber(state.world.reputation, defaults.world.reputation, 0);
+  state.world.quest = typeof state.world.quest === 'string' ? state.world.quest : defaults.world.quest;
+  state.world.flags = isPlainObject(state.world.flags) ? state.world.flags : { ...defaults.world.flags };
+  state.world.unlockedLocations = Array.isArray(state.world.unlockedLocations)
+    ? [...new Set(['yuzhou', ...state.world.unlockedLocations.filter(value => typeof value === 'string')])]
+    : ['yuzhou'];
+
+  state.relationships = normalizeRelationships(state.relationships, defaults.relationships);
+  state.party = Array.isArray(state.party)
+    ? [...new Set(state.party.filter(value => typeof value === 'string'))]
+    : [...defaults.party];
+  if (!state.party.length) state.party = [...defaults.party];
+  state.martialArts = normalizeMartialArts(state.martialArts, defaults.martialArts);
+  state.inventory = normalizeInventory(state.inventory, defaults.inventory);
+  state.events = normalizeEvents(state.events, defaults.events);
+  state.logs = Array.isArray(state.logs)
+    ? state.logs.filter(value => typeof value === 'string').slice(0, 30)
+    : [...defaults.logs];
+  state.meta = isPlainObject(state.meta) ? deepMerge(defaults.meta, state.meta) : { ...defaults.meta };
+  state.meta.createdAt = finiteNumber(state.meta.createdAt, defaults.meta.createdAt, 0);
+  state.meta.savedAt = finiteNumber(state.meta.savedAt, defaults.meta.savedAt, 0);
+  state.meta.playCount = Math.floor(finiteNumber(state.meta.playCount, defaults.meta.playCount, 0));
+
   if (state.world.flags.scoutDefeated) unlock(state, 'cangbing');
   if (state.world.flags.cangbingGuardDefeated) unlock(state, 'xuanming');
   if (state.world.flags.s1_xuanming_node_done) {
@@ -114,27 +197,27 @@ function normalizeV2(raw) {
   if (state.world.flags.s1_huanyinfang_node_done) unlock(state, 'tongwenguan');
   if (state.world.flags.s1_tongwenguan_node_done) unlock(state, 'longquan');
   if (state.world.flags.chapter1Done) unlock(state, 'qiguo');
-  normalizeRelationships(state.relationships);
+
   return state;
 }
 
 export function migrateSave(raw) {
-  if (!raw || typeof raw !== 'object') return defaultState();
+  if (!isPlainObject(raw)) return defaultState();
   if (raw.saveVersion === SAVE_VERSION || raw.player || raw.world) return normalizeV2(raw);
 
   const state = defaultState();
-  const flags = raw.flags || {};
-  const mastery = raw.mastery || {};
+  const flags = isPlainObject(raw.flags) ? raw.flags : {};
+  const mastery = isPlainObject(raw.mastery) ? raw.mastery : {};
 
-  state.player.name = raw.playerName || state.player.name;
-  state.player.level = Number.isFinite(raw.level) ? raw.level : state.player.level;
-  state.player.exp = Number.isFinite(raw.exp) ? raw.exp : state.player.exp;
-  state.player.silver = Number.isFinite(raw.silver) ? raw.silver : state.player.silver;
-  state.player.stamina = Number.isFinite(raw.stamina) ? raw.stamina : state.player.stamina;
-  state.player.maxStamina = Number.isFinite(raw.maxStamina) ? raw.maxStamina : state.player.maxStamina;
+  state.player.name = typeof raw.playerName === 'string' && raw.playerName.trim() ? raw.playerName : state.player.name;
+  state.player.level = Math.floor(finiteNumber(raw.level, state.player.level, 1, 999));
+  state.player.exp = finiteNumber(raw.exp, state.player.exp, 0);
+  state.player.silver = finiteNumber(raw.silver, state.player.silver, 0);
+  state.player.stamina = finiteNumber(raw.stamina, state.player.stamina, 0);
+  state.player.maxStamina = finiteNumber(raw.maxStamina, state.player.maxStamina, 1);
 
   state.party = Array.isArray(raw.party) && raw.party.length ? [...raw.party] : state.party;
-  state.world.quest = raw.quest || state.world.quest;
+  state.world.quest = typeof raw.quest === 'string' ? raw.quest : state.world.quest;
   state.world.flags = { ...state.world.flags, ...flags };
   state.world.reputation = (flags.scoutDefeated ? 20 : 0) + (flags.cangbingVisited ? 15 : 0);
 
@@ -144,10 +227,10 @@ export function migrateSave(raw) {
   state.world.unlockedLocations = [...new Set(state.world.unlockedLocations)];
 
   for (const [id, level] of Object.entries(mastery)) {
-    state.martialArts[id] = martialArt(true, Number.isFinite(level) ? level : 1, 0);
+    state.martialArts[id] = martialArt(true, finiteNumber(level, 1, 1, 999), 0);
   }
 
-  if (Array.isArray(raw.logs) && raw.logs.length) state.logs = [...raw.logs];
+  if (Array.isArray(raw.logs) && raw.logs.length) state.logs = raw.logs.filter(value => typeof value === 'string');
   if (Number.isFinite(raw.savedAt)) state.meta.savedAt = raw.savedAt;
   state.logs.unshift('存档已从 Prototype v0.1 自动迁移至 v0.2.0。');
 
@@ -174,7 +257,11 @@ export function loadState() {
 export function saveState(state) {
   const safe = normalizeV2(state);
   safe.meta.savedAt = Date.now();
-  localStorage.setItem(KEY_V2, JSON.stringify(safe));
+  try {
+    localStorage.setItem(KEY_V2, JSON.stringify(safe));
+  } catch (error) {
+    console.warn('写入存档失败，本次状态仍保留在内存中。', error);
+  }
   return safe;
 }
 
