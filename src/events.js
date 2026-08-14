@@ -1,6 +1,8 @@
 import { checkConditions } from './conditions.js';
 import { applyRewards } from './progression.js';
 
+const VALID_CATEGORIES = new Set(['main', 'side', 'hidden', 'character', 'encounter']);
+
 function relationStage(rel = {}) {
   if (!rel.met) return 'unknown';
   const value = Number.isFinite(rel.affinity) ? rel.affinity : 0;
@@ -12,6 +14,21 @@ function relationStage(rel = {}) {
   return 'hostile';
 }
 
+function eventList(state, key) {
+  if (!state.events) state.events = { completed: [], failed: [], active: [], counters: {} };
+  if (!Array.isArray(state.events[key])) state.events[key] = [];
+  return state.events[key];
+}
+
+function addUnique(array, value) {
+  if (!array.includes(value)) array.push(value);
+}
+
+function removeValue(array, value) {
+  const index = array.indexOf(value);
+  if (index >= 0) array.splice(index, 1);
+}
+
 export const EVENTS = [
   {
     id: 's1_yuzhou_scout',
@@ -20,6 +37,7 @@ export const EVENTS = [
     location: 'yuzhou',
     title: '驿道疑云',
     desc: '城南驿道发现玄冥教踪迹。',
+    retryOnFail: true,
     conditions: [{ type: 'flagFalse', key: 'scoutDefeated' }],
     action: { type: 'battle', enemies: ['scout'] },
     rewards: { silver: 60, exp: 35, cultivation: 10, reputation: 20 },
@@ -29,7 +47,8 @@ export const EVENTS = [
       { type: 'setQuest', value: '旧谷暗号' },
       { type: 'setChapter', value: 's1_yuzhou' }
     ],
-    log: '你与蚩梦击退玄冥教探子，搜到指向藏兵谷的旧暗号。'
+    log: '你与蚩梦击退玄冥教探子，搜到指向藏兵谷的旧暗号。',
+    failureLog: '你暂时没能拿下玄冥教探子，只得先退回渝州整顿。'
   },
   {
     id: 's1_yuzhou_training',
@@ -123,6 +142,7 @@ export const EVENTS = [
     location: 'cangbing',
     title: '深入谷口',
     desc: '玄冥教力士守在谷口深处。',
+    retryOnFail: true,
     conditions: [
       { type: 'locationUnlocked', location: 'cangbing' },
       { type: 'flagFalse', key: 'cangbingGuardDefeated' }
@@ -130,7 +150,8 @@ export const EVENTS = [
     action: { type: 'battle', enemies: ['guard'] },
     rewards: { silver: 90, exp: 55, cultivation: 15, reputation: 15 },
     effects: [{ type: 'setFlag', key: 'cangbingGuardDefeated', value: true }],
-    log: '你击退藏兵谷口的玄冥教力士。'
+    log: '你击退藏兵谷口的玄冥教力士。',
+    failureLog: '玄冥教力士守势沉重，你暂时退回谷外。'
   },
   {
     id: 's1_hidden_stranger',
@@ -148,6 +169,26 @@ export const EVENTS = [
     rewards: { cultivation: 20 },
     effects: [{ type: 'setFlag', key: 'met_hidden_stranger', value: true }],
     log: '陌生人只与你过了一招便收手，临走前说：“星位，不过是入门。”'
+  },
+  {
+    id: 's1_hidden_abandoned_post',
+    season: 1,
+    category: 'hidden',
+    location: 'yuzhou',
+    title: '废驿下的铜牌',
+    desc: '听过客栈传闻后，你在城西废驿发现了一块被泥土掩住的旧铜牌。',
+    conditions: [
+      { type: 'flagTrue', key: 'heard_xuanming_rumor' },
+      { type: 'realmGte', value: 'small_star' },
+      { type: 'eventNotCompleted', event: 's1_hidden_abandoned_post' }
+    ],
+    action: { type: 'instant' },
+    rewards: { cultivation: 10 },
+    effects: [
+      { type: 'addItem', item: 'old_coin', count: 1 },
+      { type: 'setFlag', key: 'found_abandoned_post_token', value: true }
+    ],
+    log: '你在废驿梁柱下翻出一块旧铜牌，纹路与玄冥教近期的行踪似乎有关。'
   }
 ];
 
@@ -155,10 +196,20 @@ export function getEvent(id) {
   return EVENTS.find(event => event.id === id) || null;
 }
 
+export function validateEventDefinition(event) {
+  if (!event?.id || !event?.location || !event?.title) return false;
+  if (!VALID_CATEGORIES.has(event.category)) return false;
+  if (!Array.isArray(event.conditions)) return false;
+  if (!event.action?.type) return false;
+  return true;
+}
+
 export function getAvailableEvents(state, locationId) {
   return EVENTS.filter(event => {
+    if (!validateEventDefinition(event)) return false;
     if (event.location !== locationId) return false;
-    if (!event.repeatable && state.events.completed.includes(event.id)) return false;
+    if (!event.repeatable && eventList(state, 'completed').includes(event.id)) return false;
+    if (eventList(state, 'failed').includes(event.id) && !event.retryOnFail) return false;
     return checkConditions(event.conditions || [], state);
   });
 }
@@ -177,10 +228,21 @@ function applyEffect(state, effect) {
     case 'setChapter':
       state.world.chapter = effect.value;
       break;
+    case 'setSeason':
+      state.world.season = effect.value;
+      break;
     case 'changeAffinity': {
       const rel = state.relationships?.[effect.character];
       if (rel) {
         rel.affinity = Math.max(-100, Math.min(100, rel.affinity + effect.value));
+        rel.relationStage = relationStage(rel);
+      }
+      break;
+    }
+    case 'setCharacterMet': {
+      const rel = state.relationships?.[effect.character];
+      if (rel) {
+        rel.met = effect.value !== false;
         rel.relationStage = relationStage(rel);
       }
       break;
@@ -202,16 +264,38 @@ function applyEffect(state, effect) {
   }
 }
 
+export function beginEvent(state, eventId) {
+  const event = getEvent(eventId);
+  if (!event || !validateEventDefinition(event)) return { ok: false, event };
+  if (!event.repeatable && eventList(state, 'completed').includes(event.id)) return { ok: false, event };
+  if (eventList(state, 'failed').includes(event.id) && !event.retryOnFail) return { ok: false, event };
+  if (!checkConditions(event.conditions || [], state)) return { ok: false, event };
+  addUnique(eventList(state, 'active'), event.id);
+  return { ok: true, event };
+}
+
 export function completeEvent(state, eventId) {
   const event = getEvent(eventId);
-  if (!event) return { ok: false, event: null, levels: 0 };
-  if (!event.repeatable && state.events.completed.includes(event.id)) return { ok: false, event, levels: 0 };
+  if (!event || !validateEventDefinition(event)) return { ok: false, event: event || null, levels: 0 };
+  if (!event.repeatable && eventList(state, 'completed').includes(event.id)) return { ok: false, event, levels: 0 };
   if (!checkConditions(event.conditions || [], state)) return { ok: false, event, levels: 0 };
 
   const rewardsResult = applyRewards(state, event.rewards || {});
   for (const effect of event.effects || []) applyEffect(state, effect);
-  if (!event.repeatable) state.events.completed.push(event.id);
+  removeValue(eventList(state, 'active'), event.id);
+  removeValue(eventList(state, 'failed'), event.id);
+  if (!event.repeatable) addUnique(eventList(state, 'completed'), event.id);
   if (event.log) state.logs.unshift(event.log);
   state.logs = state.logs.slice(0, 30);
   return { ok: true, event, levels: rewardsResult.levels };
+}
+
+export function failEvent(state, eventId) {
+  const event = getEvent(eventId);
+  if (!event || !validateEventDefinition(event)) return { ok: false, event: event || null };
+  removeValue(eventList(state, 'active'), event.id);
+  addUnique(eventList(state, 'failed'), event.id);
+  if (event.failureLog) state.logs.unshift(event.failureLog);
+  state.logs = state.logs.slice(0, 30);
+  return { ok: true, event };
 }
