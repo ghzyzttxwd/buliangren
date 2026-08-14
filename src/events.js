@@ -44,197 +44,77 @@ export const EVENTS = [
   // 阶段 B：序章 / 渝州篇
   // ---------------------------------------------------------------------------
   {
-    id: 's1_yuzhou_formal_dark_current',
-    season: 1,
-    category: 'main',
-    location: 'yuzhou',
-    title: '渝州暗潮',
-    desc: '城外盘查突然加严。玄冥教的人似乎在追踪另一批刚入江湖的年轻人。',
-    retryOnFail: true,
-    conditions: [
-      { type: 'eventNotCompleted', event: 's1_yuzhou_formal_dark_current' }
-    ],
-    action: { type: 'battle', enemies: ['scout'] },
-    rewards: { silver: 40, exp: 20, cultivation: 5, reputation: 15 },
-    effects: [
-      { type: 'setQuest', value: '渝州风声' },
-      { type: 'setChapter', value: 's1_yuzhou' }
-    ],
+    id: 's1_yuzhou_formal_dark_current', season: 1, category: 'main', location: 'yuzhou',
+    title: '渝州暗潮', desc: '城外盘查突然加严。玄冥教的人似乎在追踪另一批刚入江湖的年轻人。', retryOnFail: true,
+    conditions: [{ type: 'eventNotCompleted', event: 's1_yuzhou_formal_dark_current' }],
+    action: { type: 'battle', enemies: ['scout'] }, rewards: { silver: 40, exp: 20, cultivation: 5, reputation: 15 },
+    effects: [{ type: 'setQuest', value: '渝州风声' }, { type: 'setChapter', value: 's1_yuzhou' }],
     log: '你击退一名在商路上横行的玄冥教探子，也确认这场大规模搜查真正追逐的另有其人。',
     failureLog: '玄冥教探子人数占优，你暂时退回渝州，准备另寻机会。'
   },
   {
-    id: 's1_yuzhou_formal_inn_rumor',
-    season: 1,
-    category: 'side',
-    location: 'yuzhou',
-    title: '客栈里的风声',
-    desc: '商旅都在议论城外的盘查。有人提到，玄冥教正在寻找一对年轻江湖人。',
-    conditions: [
-      { type: 'eventCompleted', event: 's1_yuzhou_formal_dark_current' },
-      { type: 'reputationGte', value: 15 },
-      { type: 'eventNotCompleted', event: 's1_yuzhou_formal_inn_rumor' }
-    ],
-    action: { type: 'instant' },
-    rewards: { exp: 8, reputation: 5 },
-    effects: [],
+    id: 's1_yuzhou_formal_inn_rumor', season: 1, category: 'side', location: 'yuzhou',
+    title: '客栈里的风声', desc: '商旅都在议论城外的盘查。有人提到，玄冥教正在寻找一对年轻江湖人。',
+    conditions: [{ type: 'eventCompleted', event: 's1_yuzhou_formal_dark_current' }, { type: 'reputationGte', value: 15 }, { type: 'eventNotCompleted', event: 's1_yuzhou_formal_inn_rumor' }],
+    action: { type: 'instant' }, rewards: { exp: 8, reputation: 5 }, effects: [],
     log: '你从几拨商旅的说法里拼出同一件事：玄冥教的搜查目标是一对刚刚踏入江湖的年轻人。'
   },
   {
-    id: 's1_yuzhou_formal_road_relief',
-    season: 1,
-    category: 'side',
-    location: 'yuzhou',
-    title: '封路后的商队',
-    desc: '玄冥教封路搜人，一支商队被困在城外。帮他们脱身，也许能换来些江湖名声。',
-    retryOnFail: true,
-    conditions: [
-      { type: 'eventCompleted', event: 's1_yuzhou_formal_dark_current' },
-      { type: 'eventNotCompleted', event: 's1_yuzhou_formal_road_relief' }
-    ],
-    action: { type: 'battle', enemies: ['scout'] },
-    rewards: { silver: 35, exp: 18, cultivation: 5, reputation: 10 },
-    effects: [],
-    log: '你替受困商队赶走了拦路的玄冥教探子。渝州来往的商旅开始记住你的名号。',
-    failureLog: '你没能冲开玄冥教的封锁，只得先让商队退回安全处。'
+    id: 's1_yuzhou_formal_road_relief', season: 1, category: 'side', location: 'yuzhou',
+    title: '封路后的商队', desc: '玄冥教封路搜人，一支商队被困在城外。帮他们脱身，也许能换来些江湖名声。', retryOnFail: true,
+    conditions: [{ type: 'eventCompleted', event: 's1_yuzhou_formal_dark_current' }, { type: 'eventNotCompleted', event: 's1_yuzhou_formal_road_relief' }],
+    action: { type: 'battle', enemies: ['scout'] }, rewards: { silver: 35, exp: 18, cultivation: 5, reputation: 10 }, effects: [],
+    log: '你替受困商队赶走了拦路的玄冥教探子。渝州来往的商旅开始记住你的名号。', failureLog: '你没能冲开玄冥教的封锁，只得先让商队退回安全处。'
   },
   {
-    id: 's1_yuzhou_formal_training',
-    season: 1,
-    category: 'encounter',
-    location: 'yuzhou',
-    title: '城外练功',
-    desc: '趁江湖风波尚未逼到眼前，找一处僻静地打熬筋骨。本阶段只有前五次能获得有效进益。',
-    repeatable: true,
-    conditions: [
-      { type: 'eventCompleted', event: 's1_yuzhou_formal_dark_current' },
-      { type: 'counterLt', key: 's1_yuzhou_training_uses', value: 5 }
-    ],
-    action: { type: 'instant' },
-    rewards: { cultivation: 5, exp: 4 },
-    effects: [
-      { type: 'incrementCounter', key: 's1_yuzhou_training_uses', value: 1 }
-    ],
+    id: 's1_yuzhou_formal_training', season: 1, category: 'encounter', location: 'yuzhou',
+    title: '城外练功', desc: '趁江湖风波尚未逼到眼前，找一处僻静地打熬筋骨。本阶段只有前五次能获得有效进益。', repeatable: true,
+    conditions: [{ type: 'eventCompleted', event: 's1_yuzhou_formal_dark_current' }, { type: 'counterLt', key: 's1_yuzhou_training_uses', value: 5 }],
+    action: { type: 'instant' }, rewards: { cultivation: 5, exp: 4 }, effects: [{ type: 'incrementCounter', key: 's1_yuzhou_training_uses', value: 1 }],
     log: '你在渝州城外静心练了一阵，气息比先前凝实了一分。'
   },
   {
-    id: 's1_yuzhou_formal_chimeng_01',
-    season: 1,
-    category: 'character',
-    location: 'yuzhou',
-    title: '蚩梦的判断',
-    desc: '蚩梦观察了几日，觉得玄冥教这次闹出的动静远比追你们两个人更大。',
-    conditions: [
-      { type: 'eventCompleted', event: 's1_yuzhou_formal_dark_current' },
-      { type: 'affinityGte', character: 'chimeng', value: 20 },
-      { type: 'eventNotCompleted', event: 's1_yuzhou_formal_chimeng_01' }
-    ],
-    action: { type: 'instant' },
-    rewards: { exp: 5 },
-    effects: [
-      { type: 'changeAffinity', character: 'chimeng', value: 5 },
-      { type: 'setPersonalFlag', character: 'chimeng', key: 'recognized_bigger_hunt', value: true }
-    ],
+    id: 's1_yuzhou_formal_chimeng_01', season: 1, category: 'character', location: 'yuzhou',
+    title: '蚩梦的判断', desc: '蚩梦观察了几日，觉得玄冥教这次闹出的动静远比追你们两个人更大。',
+    conditions: [{ type: 'eventCompleted', event: 's1_yuzhou_formal_dark_current' }, { type: 'affinityGte', character: 'chimeng', value: 20 }, { type: 'eventNotCompleted', event: 's1_yuzhou_formal_chimeng_01' }],
+    action: { type: 'instant' }, rewards: { exp: 5 },
+    effects: [{ type: 'changeAffinity', character: 'chimeng', value: 5 }, { type: 'setPersonalFlag', character: 'chimeng', key: 'recognized_bigger_hunt', value: true }],
     log: '蚩梦判断玄冥教真正盯上的另有其人。你们决定先看清这场风波，再决定卷进去多深。'
   },
   {
-    id: 's1_yuzhou_formal_hidden_black_token',
-    season: 1,
-    category: 'hidden',
-    location: 'yuzhou',
-    title: '沟渠里的黑牌',
-    desc: '雨后沟渠里露出一角乌黑木牌。只有在名声尚未传开时，你才有机会安静追查这条不起眼的线索。',
-    conditions: [
-      { type: 'eventCompleted', event: 's1_yuzhou_formal_dark_current' },
-      { type: 'cultivationGte', value: 10 },
-      { type: 'reputationLte', value: 25 },
-      { type: 'eventNotCompleted', event: 's1_yuzhou_formal_hidden_black_token' }
-    ],
-    action: { type: 'instant' },
-    rewards: { exp: 8, cultivation: 8 },
-    effects: [
-      { type: 'setFlag', key: 'found_yuzhou_black_token', value: true }
-    ],
+    id: 's1_yuzhou_formal_hidden_black_token', season: 1, category: 'hidden', location: 'yuzhou',
+    title: '沟渠里的黑牌', desc: '雨后沟渠里露出一角乌黑木牌。只有在名声尚未传开时，你才有机会安静追查这条不起眼的线索。',
+    conditions: [{ type: 'eventCompleted', event: 's1_yuzhou_formal_dark_current' }, { type: 'cultivationGte', value: 10 }, { type: 'reputationLte', value: 25 }, { type: 'eventNotCompleted', event: 's1_yuzhou_formal_hidden_black_token' }],
+    action: { type: 'instant' }, rewards: { exp: 8, cultivation: 8 }, effects: [{ type: 'setFlag', key: 'found_yuzhou_black_token', value: true }],
     log: '你从一块不起眼的黑牌上确认：玄冥教在渝州周边布置了不止一条搜查路线。这条发现没有惊动任何人。'
   },
   {
-    id: 's1_yuzhou_formal_crossing',
-    season: 1,
-    category: 'main',
-    location: 'yuzhou',
-    title: '被追逐的年轻人',
-    desc: '你的名声让更多消息主动找上门。玄冥教真正追逐的年轻人，终于从传闻变成近在眼前的江湖风波。',
-    conditions: [
-      { type: 'eventCompleted', event: 's1_yuzhou_formal_dark_current' },
-      { type: 'reputationGte', value: 30 },
-      { type: 'eventNotCompleted', event: 's1_yuzhou_formal_crossing' }
-    ],
-    action: { type: 'instant' },
-    rewards: { exp: 25, cultivation: 5, reputation: 10 },
-    effects: [
-      { type: 'setQuest', value: '追查剑庐方向' }
-    ],
+    id: 's1_yuzhou_formal_crossing', season: 1, category: 'main', location: 'yuzhou',
+    title: '被追逐的年轻人', desc: '你的名声让更多消息主动找上门。玄冥教真正追逐的年轻人，终于从传闻变成近在眼前的江湖风波。',
+    conditions: [{ type: 'eventCompleted', event: 's1_yuzhou_formal_dark_current' }, { type: 'reputationGte', value: 30 }, { type: 'eventNotCompleted', event: 's1_yuzhou_formal_crossing' }],
+    action: { type: 'instant' }, rewards: { exp: 25, cultivation: 5, reputation: 10 }, effects: [{ type: 'setQuest', value: '追查剑庐方向' }],
     log: '你在一场外围追逐中确认了玄冥教的真正目标。那名年轻人与同行很快脱离视线，而你只来得及处理追兵留下的余波。'
   },
   {
-    id: 's1_yuzhou_formal_night_watch',
-    season: 1,
-    category: 'side',
-    location: 'yuzhou',
-    title: '城门夜巡',
-    desc: '那场追逐之后仍有玄冥教散兵在城外搜人。城门附近的百姓不敢夜行。',
-    retryOnFail: true,
-    conditions: [
-      { type: 'eventCompleted', event: 's1_yuzhou_formal_crossing' },
-      { type: 'eventNotCompleted', event: 's1_yuzhou_formal_night_watch' }
-    ],
-    action: { type: 'battle', enemies: ['scout'] },
-    rewards: { silver: 25, exp: 15, cultivation: 5, reputation: 5 },
-    effects: [],
-    log: '你清掉了城门外一拨仍在搜人的玄冥教散兵。第二天，关于剑庐方向大战的消息开始传来。',
-    failureLog: '城外搜人的玄冥教散兵比预想中难缠，你暂时退回城内。'
+    id: 's1_yuzhou_formal_night_watch', season: 1, category: 'side', location: 'yuzhou',
+    title: '城门夜巡', desc: '那场追逐之后仍有玄冥教散兵在城外搜人。城门附近的百姓不敢夜行。', retryOnFail: true,
+    conditions: [{ type: 'eventCompleted', event: 's1_yuzhou_formal_crossing' }, { type: 'eventNotCompleted', event: 's1_yuzhou_formal_night_watch' }],
+    action: { type: 'battle', enemies: ['scout'] }, rewards: { silver: 25, exp: 15, cultivation: 5, reputation: 5 }, effects: [],
+    log: '你清掉了城门外一拨仍在搜人的玄冥教散兵。第二天，关于剑庐方向大战的消息开始传来。', failureLog: '城外搜人的玄冥教散兵比预想中难缠，你暂时退回城内。'
   },
   {
-    id: 's1_yuzhou_formal_swordhut_aftershock',
-    season: 1,
-    category: 'main',
-    location: 'yuzhou',
-    title: '剑庐火光',
-    desc: '剑庐方向传来大战后的消息。玄冥教高手已经介入，那名被追逐的年轻人也从公开视线中消失。',
-    conditions: [
-      { type: 'eventCompleted', event: 's1_yuzhou_formal_crossing' },
-      { type: 'reputationGte', value: 45 },
-      { type: 'eventNotCompleted', event: 's1_yuzhou_formal_swordhut_aftershock' }
-    ],
-    action: { type: 'instant' },
-    rewards: { exp: 25, reputation: 5 },
-    effects: [
-      { type: 'unlockLocation', id: 'cangbing' },
-      { type: 'setQuest', value: '谷外封路' }
-    ],
+    id: 's1_yuzhou_formal_swordhut_aftershock', season: 1, category: 'main', location: 'yuzhou',
+    title: '剑庐火光', desc: '剑庐方向传来大战后的消息。玄冥教高手已经介入，那名被追逐的年轻人也从公开视线中消失。',
+    conditions: [{ type: 'eventCompleted', event: 's1_yuzhou_formal_crossing' }, { type: 'reputationGte', value: 45 }, { type: 'eventNotCompleted', event: 's1_yuzhou_formal_swordhut_aftershock' }],
+    action: { type: 'instant' }, rewards: { exp: 25, reputation: 5 }, effects: [{ type: 'unlockLocation', id: 'cangbing' }, { type: 'setQuest', value: '谷外封路' }],
     log: '你赶到时，剑庐的核心战斗早已结束。留下的痕迹表明，玄冥教高手曾在这里围攻目标，而重伤者随后被另一股隐藏力量带走。'
   },
   {
-    id: 's1_yuzhou_formal_cangbing_outer',
-    season: 1,
-    category: 'main',
-    location: 'cangbing',
-    title: '谷外封路',
-    desc: '线索最终停在藏兵谷外围。谷内有人刻意封住消息，你能确认局势已经被更深的一股力量接手。',
-    conditions: [
-      { type: 'eventCompleted', event: 's1_yuzhou_formal_swordhut_aftershock' },
-      { type: 'locationUnlocked', location: 'cangbing' },
-      { type: 'reputationGte', value: 50 },
-      { type: 'eventNotCompleted', event: 's1_yuzhou_formal_cangbing_outer' }
-    ],
-    action: { type: 'instant' },
-    rewards: { exp: 20, reputation: 5 },
-    effects: [
-      { type: 'unlockLocation', id: 'xuanming' },
-      { type: 'setFlag', key: 's1_stage_b_complete', value: true },
-      { type: 'setQuest', value: '玄冥暗流' },
-      { type: 'setChapter', value: 's1_xuanming' }
-    ],
+    id: 's1_yuzhou_formal_cangbing_outer', season: 1, category: 'main', location: 'cangbing',
+    title: '谷外封路', desc: '线索最终停在藏兵谷外围。谷内有人刻意封住消息，你能确认局势已经被更深的一股力量接手。',
+    conditions: [{ type: 'eventCompleted', event: 's1_yuzhou_formal_swordhut_aftershock' }, { type: 'locationUnlocked', location: 'cangbing' }, { type: 'reputationGte', value: 50 }, { type: 'eventNotCompleted', event: 's1_yuzhou_formal_cangbing_outer' }],
+    action: { type: 'instant' }, rewards: { exp: 20, reputation: 5 },
+    effects: [{ type: 'unlockLocation', id: 'xuanming' }, { type: 'setFlag', key: 's1_stage_b_complete', value: true }, { type: 'setQuest', value: '玄冥暗流' }, { type: 'setChapter', value: 's1_xuanming' }],
     log: '你止步于藏兵谷外围，没有闯入那场不属于你的核心会面。江湖另一边，玄冥教的行动却正在继续扩大。阶段 B 至此收束。'
   },
 
@@ -244,178 +124,67 @@ export const EVENTS = [
   // 玩家只介入外围压力、情报与局部冲突，不改写玄冥教核心人物的既定命运。
   // ---------------------------------------------------------------------------
   {
-    id: 's1_xuanming_formal_hunt_escalates',
-    season: 1,
-    category: 'main',
-    location: 'xuanming',
-    title: '搜捕升级',
-    desc: '剑庐一战之后，玄冥教沿途盘查明显换了层级。普通探子退到外围，更强的人开始接手追踪。',
-    conditions: [
-      { type: 'flagTrue', key: 's1_stage_b_complete' },
-      { type: 'locationUnlocked', location: 'xuanming' },
-      { type: 'eventNotCompleted', event: 's1_xuanming_formal_hunt_escalates' }
-    ],
-    action: { type: 'instant' },
-    rewards: { exp: 18, reputation: 5 },
-    effects: [
-      { type: 'setQuest', value: '查清玄冥教的新动向' }
-    ],
+    id: 's1_xuanming_formal_hunt_escalates', season: 1, category: 'main', location: 'xuanming',
+    title: '搜捕升级', desc: '剑庐一战之后，玄冥教沿途盘查明显换了层级。普通探子退到外围，更强的人开始接手追踪。',
+    conditions: [{ type: 'flagTrue', key: 's1_stage_b_complete' }, { type: 'locationUnlocked', location: 'xuanming' }, { type: 'eventNotCompleted', event: 's1_xuanming_formal_hunt_escalates' }],
+    action: { type: 'instant' }, rewards: { exp: 18, reputation: 5 }, effects: [{ type: 'setQuest', value: '查清玄冥教的新动向' }],
     log: '你确认玄冥教已经不再把这场追捕当作普通江湖纠纷：封路、眼线和传令都换了更高规格。'
   },
   {
-    id: 's1_xuanming_formal_road_pressure',
-    season: 1,
-    category: 'side',
-    location: 'xuanming',
-    title: '驿路封查',
-    desc: '玄冥教扩大搜捕后，一条商旅驿路被反复盘查。当地人开始主动找你帮忙。',
-    retryOnFail: true,
-    conditions: [
-      { type: 'eventCompleted', event: 's1_xuanming_formal_hunt_escalates' },
-      { type: 'eventNotCompleted', event: 's1_xuanming_formal_road_pressure' }
-    ],
-    action: { type: 'battle', enemies: ['scout'] },
-    rewards: { silver: 30, exp: 18, cultivation: 5, reputation: 8 },
-    effects: [],
-    log: '你赶走一拨借搜查之名勒索商旅的玄冥教外围人马。更多人开始把玄冥教的压力与你的名号联系起来。',
-    failureLog: '这条驿路上的玄冥教人手比预料得多，你先把商旅疏散，再另找机会。'
+    id: 's1_xuanming_formal_road_pressure', season: 1, category: 'side', location: 'xuanming',
+    title: '驿路封查', desc: '玄冥教扩大搜捕后，一条商旅驿路被反复盘查。当地人开始主动找你帮忙。', retryOnFail: true,
+    conditions: [{ type: 'eventCompleted', event: 's1_xuanming_formal_hunt_escalates' }, { type: 'eventNotCompleted', event: 's1_xuanming_formal_road_pressure' }],
+    action: { type: 'battle', enemies: ['scout'] }, rewards: { silver: 30, exp: 18, cultivation: 5, reputation: 8 }, effects: [],
+    log: '你赶走一拨借搜查之名勒索商旅的玄冥教外围人马。更多人开始把玄冥教的压力与你的名号联系起来。', failureLog: '这条驿路上的玄冥教人手比预料得多，你先把商旅疏散，再另找机会。'
   },
   {
-    id: 's1_xuanming_formal_trace_routes',
-    season: 1,
-    category: 'encounter',
-    location: 'xuanming',
-    title: '沿线探查',
-    desc: '避开正面冲突，沿玄冥教传令路线摸清外围动向。本阶段最多获得三次有效收获。',
-    repeatable: true,
-    conditions: [
-      { type: 'eventCompleted', event: 's1_xuanming_formal_hunt_escalates' },
-      { type: 'counterLt', key: 's1_xuanming_trace_uses', value: 3 }
-    ],
-    action: { type: 'instant' },
-    rewards: { exp: 5, cultivation: 3, reputation: 2 },
-    effects: [
-      { type: 'incrementCounter', key: 's1_xuanming_trace_uses', value: 1 }
-    ],
+    id: 's1_xuanming_formal_trace_routes', season: 1, category: 'encounter', location: 'xuanming',
+    title: '沿线探查', desc: '避开正面冲突，沿玄冥教传令路线摸清外围动向。本阶段最多获得三次有效收获。', repeatable: true,
+    conditions: [{ type: 'eventCompleted', event: 's1_xuanming_formal_hunt_escalates' }, { type: 'counterLt', key: 's1_xuanming_trace_uses', value: 3 }],
+    action: { type: 'instant' }, rewards: { exp: 5, cultivation: 3, reputation: 2 }, effects: [{ type: 'incrementCounter', key: 's1_xuanming_trace_uses', value: 1 }],
     log: '你沿玄冥教外围路线探查了一阵，摸清几处哨点和传令规律，也没有惊动真正的高手。'
   },
   {
-    id: 's1_xuanming_formal_realm_breakthrough',
-    season: 1,
-    category: 'side',
-    location: 'xuanming',
-    title: '硬闯封锁',
-    desc: '一名玄冥教力士守住山口。达到小星位后，你可以选择直接打穿这处外围封锁。',
-    retryOnFail: true,
-    conditions: [
-      { type: 'eventCompleted', event: 's1_xuanming_formal_hunt_escalates' },
-      { type: 'realmGte', value: 'small_star' },
-      { type: 'eventNotCompleted', event: 's1_xuanming_formal_realm_breakthrough' }
-    ],
-    action: { type: 'battle', enemies: ['guard'] },
-    rewards: { silver: 45, exp: 28, cultivation: 8, reputation: 8 },
-    effects: [
-      { type: 'setFlag', key: 'broke_xuanming_outer_blockade', value: true }
-    ],
-    log: '你正面击退守在山口的玄冥教力士。此事很快传开，但你没有继续深入玄冥教核心据点。',
-    failureLog: '玄冥教力士守势沉重，你退回外围重新观察。这里不是非闯不可的路。'
+    id: 's1_xuanming_formal_realm_breakthrough', season: 1, category: 'side', location: 'xuanming',
+    title: '硬闯封锁', desc: '一名玄冥教力士守住山口。达到小星位后，你可以选择直接打穿这处外围封锁。', retryOnFail: true,
+    conditions: [{ type: 'eventCompleted', event: 's1_xuanming_formal_hunt_escalates' }, { type: 'realmGte', value: 'small_star' }, { type: 'eventNotCompleted', event: 's1_xuanming_formal_realm_breakthrough' }],
+    action: { type: 'battle', enemies: ['guard'] }, rewards: { silver: 45, exp: 28, cultivation: 8, reputation: 8 }, effects: [{ type: 'setFlag', key: 'broke_xuanming_outer_blockade', value: true }],
+    log: '你正面击退守在山口的玄冥教力士。此事很快传开，但你没有继续深入玄冥教核心据点。', failureLog: '玄冥教力士守势沉重，你退回外围重新观察。这里不是非闯不可的路。'
   },
   {
-    id: 's1_xuanming_formal_hidden_conflicting_orders',
-    season: 1,
-    category: 'hidden',
-    location: 'xuanming',
-    title: '两套号令',
-    desc: '渝州那块不起眼的黑牌终于派上用场：同一条玄冥教传令线上，竟出现了两套彼此冲突的暗号。',
-    conditions: [
-      { type: 'eventCompleted', event: 's1_xuanming_formal_hunt_escalates' },
-      { type: 'flagTrue', key: 'found_yuzhou_black_token' },
-      { type: 'cultivationGte', value: 20 },
-      { type: 'eventNotCompleted', event: 's1_xuanming_formal_hidden_conflicting_orders' }
-    ],
-    action: { type: 'instant' },
-    rewards: { exp: 12, cultivation: 8 },
-    effects: [
-      { type: 'setFlag', key: 'noticed_xuanming_internal_fracture', value: true }
-    ],
+    id: 's1_xuanming_formal_hidden_conflicting_orders', season: 1, category: 'hidden', location: 'xuanming',
+    title: '两套号令', desc: '渝州那块不起眼的黑牌终于派上用场：同一条玄冥教传令线上，竟出现了两套彼此冲突的暗号。',
+    conditions: [{ type: 'eventCompleted', event: 's1_xuanming_formal_hunt_escalates' }, { type: 'flagTrue', key: 'found_yuzhou_black_token' }, { type: 'cultivationGte', value: 20 }, { type: 'eventNotCompleted', event: 's1_xuanming_formal_hidden_conflicting_orders' }],
+    action: { type: 'instant' }, rewards: { exp: 12, cultivation: 8 }, effects: [{ type: 'setFlag', key: 'noticed_xuanming_internal_fracture', value: true }],
     log: '黑牌上的旧暗号与新传令互相矛盾。你只能确认玄冥教内部并非铁板一块，却还不知道真正原因。'
   },
   {
-    id: 's1_xuanming_formal_five_judges_pressure',
-    season: 1,
-    category: 'main',
-    location: 'xuanming',
-    title: '阎君压境',
-    desc: '玄冥教对目标的追捕已经由外围探子升级到更高层级。五大阎君的名号开始频繁出现在江湖消息里。',
-    conditions: [
-      { type: 'eventCompleted', event: 's1_xuanming_formal_hunt_escalates' },
-      { type: 'reputationGte', value: 65 },
-      { type: 'eventNotCompleted', event: 's1_xuanming_formal_five_judges_pressure' }
-    ],
-    action: { type: 'instant' },
-    rewards: { exp: 25, reputation: 5 },
-    effects: [
-      { type: 'setQuest', value: '玄冥教内斗的迹象' }
-    ],
+    id: 's1_xuanming_formal_five_judges_pressure', season: 1, category: 'main', location: 'xuanming',
+    title: '阎君压境', desc: '玄冥教对目标的追捕已经由外围探子升级到更高层级。五大阎君的名号开始频繁出现在江湖消息里。',
+    conditions: [{ type: 'eventCompleted', event: 's1_xuanming_formal_hunt_escalates' }, { type: 'reputationGte', value: 65 }, { type: 'eventNotCompleted', event: 's1_xuanming_formal_five_judges_pressure' }],
+    action: { type: 'instant' }, rewards: { exp: 25, reputation: 5 }, effects: [{ type: 'setQuest', value: '玄冥教内斗的迹象' }],
     log: '你确认玄冥教的追捕层级已经升级。与此同时，黑白无常与阎君一系彼此提防的迹象也越来越明显。'
   },
   {
-    id: 's1_xuanming_formal_internal_clue_known',
-    season: 1,
-    category: 'hidden',
-    location: 'xuanming',
-    title: '暗号互证',
-    desc: '你把渝州黑牌上的旧暗号与近期传令对照，终于能确认：玄冥教内部存在不止一条彼此牵制的行动线。',
-    conditions: [
-      { type: 'eventCompleted', event: 's1_xuanming_formal_five_judges_pressure' },
-      { type: 'flagTrue', key: 'found_yuzhou_black_token' },
-      { type: 'eventNotCompleted', event: 's1_xuanming_formal_internal_clue_known' }
-    ],
-    action: { type: 'instant' },
-    rewards: { exp: 10 },
-    effects: [
-      { type: 'setFlag', key: 'xuanming_internal_routes_compared', value: true }
-    ],
+    id: 's1_xuanming_formal_internal_clue_known', season: 1, category: 'hidden', location: 'xuanming',
+    title: '暗号互证', desc: '你把渝州黑牌上的旧暗号与近期传令对照，终于能确认：玄冥教内部存在不止一条彼此牵制的行动线。',
+    conditions: [{ type: 'eventCompleted', event: 's1_xuanming_formal_five_judges_pressure' }, { type: 'flagTrue', key: 'found_yuzhou_black_token' }, { type: 'eventNotCompleted', event: 's1_xuanming_formal_internal_clue_known' }],
+    action: { type: 'instant' }, rewards: { exp: 10 }, effects: [{ type: 'setFlag', key: 'xuanming_internal_routes_compared', value: true }],
     log: '前后两批暗号终于对上了：玄冥教内部正在互相防备。你仍看不清谁在替谁办事，因此没有贸然揭底。'
   },
   {
-    id: 's1_xuanming_formal_internal_clue_unknown',
-    season: 1,
-    category: 'side',
-    location: 'xuanming',
-    title: '街巷异样',
-    desc: '你没有掌握更早的暗号，只能从近期动向判断：玄冥教内部的人似乎也在互相监视。',
-    conditions: [
-      { type: 'eventCompleted', event: 's1_xuanming_formal_five_judges_pressure' },
-      { type: 'flagFalse', key: 'found_yuzhou_black_token' },
-      { type: 'eventNotCompleted', event: 's1_xuanming_formal_internal_clue_unknown' }
-    ],
-    action: { type: 'instant' },
-    rewards: { exp: 6 },
-    effects: [],
+    id: 's1_xuanming_formal_internal_clue_unknown', season: 1, category: 'side', location: 'xuanming',
+    title: '街巷异样', desc: '你没有掌握更早的暗号，只能从近期动向判断：玄冥教内部的人似乎也在互相监视。',
+    conditions: [{ type: 'eventCompleted', event: 's1_xuanming_formal_five_judges_pressure' }, { type: 'flagFalse', key: 'found_yuzhou_black_token' }, { type: 'eventNotCompleted', event: 's1_xuanming_formal_internal_clue_unknown' }],
+    action: { type: 'instant' }, rewards: { exp: 6 }, effects: [],
     log: '没有旧线索可供比对，你只能从近期的尾随和换岗判断玄冥教内部不太平。更深的原因仍藏在暗处。'
   },
   {
-    id: 's1_xuanming_formal_underworld_emperor_enters',
-    season: 1,
-    category: 'main',
-    location: 'xuanming',
-    title: '冥帝入局',
-    desc: '追捕持续升级，玄冥教内部的争斗也不再只是下属之间的私怨。冥帝朱友珪开始真正把目光投向这场棋局。',
-    conditions: [
-      { type: 'eventCompleted', event: 's1_xuanming_formal_five_judges_pressure' },
-      { type: 'reputationGte', value: 75 },
-      { type: 'eventNotCompleted', event: 's1_xuanming_formal_underworld_emperor_enters' }
-    ],
-    action: { type: 'instant' },
-    rewards: { exp: 30, cultivation: 8, reputation: 8 },
-    effects: [
-      { type: 'setFlag', key: 's1_stage_c_complete', value: true },
-      { type: 'unlockLocation', id: 'qiguo' },
-      { type: 'unlockLocation', id: 'huanyinfang' },
-      { type: 'setQuest', value: '幻音坊介入' },
-      { type: 'setChapter', value: 's1_huanyinfang' }
-    ],
+    id: 's1_xuanming_formal_underworld_emperor_enters', season: 1, category: 'main', location: 'xuanming',
+    title: '冥帝入局', desc: '追捕持续升级，玄冥教内部的争斗也不再只是下属之间的私怨。冥帝朱友珪开始真正把目光投向这场棋局。',
+    conditions: [{ type: 'eventCompleted', event: 's1_xuanming_formal_five_judges_pressure' }, { type: 'reputationGte', value: 75 }, { type: 'eventNotCompleted', event: 's1_xuanming_formal_underworld_emperor_enters' }],
+    action: { type: 'instant' }, rewards: { exp: 30, cultivation: 8, reputation: 8 },
+    effects: [{ type: 'setFlag', key: 's1_stage_c_complete', value: true }, { type: 'unlockLocation', id: 'qiguo' }, { type: 'unlockLocation', id: 'huanyinfang' }, { type: 'setQuest', value: '幻音坊介入' }, { type: 'setChapter', value: 's1_huanyinfang' }],
     log: '玄冥教的搜捕与内斗已经上升到更高层级。与此同时，另一股势力也开始围绕李星云与龙泉剑重新部署。玄冥教篇至此收束。'
   },
 
@@ -425,199 +194,82 @@ export const EVENTS = [
   // 玩家只能影响外围合作与自己和女帝的关系，不能取代姬如雪与李星云的原作关系。
   // ---------------------------------------------------------------------------
   {
-    id: 's1_huanyinfang_formal_attention',
-    season: 1,
-    category: 'main',
-    location: 'qiguo',
-    title: '幻音坊的目光',
-    desc: '玄冥教把局势推高之后，岐地也开始重新部署。九天圣姬的踪迹比之前更频繁地出现在李星云行进路线附近。',
-    conditions: [
-      { type: 'flagTrue', key: 's1_stage_c_complete' },
-      { type: 'locationUnlocked', location: 'qiguo' },
-      { type: 'eventNotCompleted', event: 's1_huanyinfang_formal_attention' }
-    ],
-    action: { type: 'instant' },
-    rewards: { exp: 22, reputation: 5 },
-    effects: [
-      { type: 'setQuest', value: '岐地试探' }
-    ],
+    id: 's1_huanyinfang_formal_attention', season: 1, category: 'main', location: 'qiguo',
+    title: '幻音坊的目光', desc: '玄冥教把局势推高之后，岐地也开始重新部署。九天圣姬的踪迹比之前更频繁地出现在李星云行进路线附近。',
+    conditions: [{ type: 'flagTrue', key: 's1_stage_c_complete' }, { type: 'locationUnlocked', location: 'qiguo' }, { type: 'eventNotCompleted', event: 's1_huanyinfang_formal_attention' }],
+    action: { type: 'instant' }, rewards: { exp: 22, reputation: 5 }, effects: [{ type: 'setQuest', value: '岐地试探' }],
     log: '你在岐地确认：幻音坊已经不再只让姬如雪单线行动，更多圣姬开始围绕李星云与龙泉剑重新布置人手。'
   },
   {
-    id: 's1_huanyinfang_formal_choose_help',
-    season: 1,
-    category: 'side',
-    location: 'qiguo',
-    title: '截住追兵',
-    desc: '一队幻音坊外围人手被玄冥教探子盯上。你可以替她们截住追兵，也可以选择不插手。',
-    retryOnFail: true,
-    conditions: [
-      { type: 'eventCompleted', event: 's1_huanyinfang_formal_attention' },
-      { type: 'flagFalse', key: 'huanyinfang_contact_decided' },
-      { type: 'eventNotCompleted', event: 's1_huanyinfang_formal_choose_help' }
-    ],
-    action: { type: 'battle', enemies: ['scout'] },
-    rewards: { silver: 30, exp: 20, cultivation: 5, reputation: 5 },
-    effects: [
-      { type: 'setFlag', key: 'helped_huanyinfang', value: true },
-      { type: 'setFlag', key: 'huanyinfang_contact_decided', value: true }
-    ],
-    log: '你替幻音坊外围人手截住玄冥教追兵，却没有追问她们正在执行什么任务。这份分寸被岐地的人记了下来。',
-    failureLog: '你没能完全截住追兵。幻音坊的人自行脱身，这次介入没有形成有效结果。'
+    id: 's1_huanyinfang_formal_choose_help', season: 1, category: 'side', location: 'qiguo',
+    title: '截住追兵', desc: '一队幻音坊外围人手被玄冥教探子盯上。你可以替她们截住追兵，也可以选择不插手。', retryOnFail: true,
+    conditions: [{ type: 'eventCompleted', event: 's1_huanyinfang_formal_attention' }, { type: 'flagFalse', key: 'huanyinfang_contact_decided' }, { type: 'eventNotCompleted', event: 's1_huanyinfang_formal_choose_help' }],
+    action: { type: 'battle', enemies: ['scout'] }, rewards: { silver: 30, exp: 20, cultivation: 5, reputation: 5 },
+    effects: [{ type: 'setFlag', key: 'helped_huanyinfang', value: true }, { type: 'setFlag', key: 'huanyinfang_contact_decided', value: true }],
+    log: '你替幻音坊外围人手截住玄冥教追兵，却没有追问她们正在执行什么任务。这份分寸被岐地的人记了下来。', failureLog: '你没能完全截住追兵。幻音坊的人自行脱身，这次介入没有形成有效结果。'
   },
   {
-    id: 's1_huanyinfang_formal_choose_distance',
-    season: 1,
-    category: 'side',
-    location: 'qiguo',
-    title: '不插手这场追逐',
-    desc: '幻音坊与玄冥教在远处互相盯梢。你可以保持距离，让双方自己处理这场追逐。',
-    conditions: [
-      { type: 'eventCompleted', event: 's1_huanyinfang_formal_attention' },
-      { type: 'flagFalse', key: 'huanyinfang_contact_decided' },
-      { type: 'eventNotCompleted', event: 's1_huanyinfang_formal_choose_distance' }
-    ],
-    action: { type: 'instant' },
-    rewards: { exp: 8 },
-    effects: [
-      { type: 'setFlag', key: 'helped_huanyinfang', value: false },
-      { type: 'setFlag', key: 'huanyinfang_contact_decided', value: true }
-    ],
+    id: 's1_huanyinfang_formal_choose_distance', season: 1, category: 'side', location: 'qiguo',
+    title: '不插手这场追逐', desc: '幻音坊与玄冥教在远处互相盯梢。你可以保持距离，让双方自己处理这场追逐。',
+    conditions: [{ type: 'eventCompleted', event: 's1_huanyinfang_formal_attention' }, { type: 'flagFalse', key: 'huanyinfang_contact_decided' }, { type: 'eventNotCompleted', event: 's1_huanyinfang_formal_choose_distance' }],
+    action: { type: 'instant' }, rewards: { exp: 8 },
+    effects: [{ type: 'setFlag', key: 'helped_huanyinfang', value: false }, { type: 'setFlag', key: 'huanyinfang_contact_decided', value: true }],
     log: '你没有替任何一方出手。幻音坊的人最终摆脱尾随，也记住了你有意保持距离的态度。'
   },
   {
-    id: 's1_huanyinfang_formal_hidden_old_codes',
-    season: 1,
-    category: 'hidden',
-    location: 'qiguo',
-    title: '旧暗号的回声',
-    desc: '你在岐地再次看到一段与玄冥教旧传令有关的痕迹。前面追出的两套号令，让你比旁人更早看出这次尾随并不单纯。',
-    conditions: [
-      { type: 'eventCompleted', event: 's1_huanyinfang_formal_attention' },
-      { type: 'flagTrue', key: 'xuanming_internal_routes_compared' },
-      { type: 'eventNotCompleted', event: 's1_huanyinfang_formal_hidden_old_codes' }
-    ],
-    action: { type: 'instant' },
-    rewards: { exp: 12, cultivation: 6 },
-    effects: [
-      { type: 'setFlag', key: 'connected_xuanming_clue_to_huanyinfang', value: true }
-    ],
+    id: 's1_huanyinfang_formal_hidden_old_codes', season: 1, category: 'hidden', location: 'qiguo',
+    title: '旧暗号的回声', desc: '你在岐地再次看到一段与玄冥教旧传令有关的痕迹。前面追出的两套号令，让你比旁人更早看出这次尾随并不单纯。',
+    conditions: [{ type: 'eventCompleted', event: 's1_huanyinfang_formal_attention' }, { type: 'flagTrue', key: 'xuanming_internal_routes_compared' }, { type: 'eventNotCompleted', event: 's1_huanyinfang_formal_hidden_old_codes' }],
+    action: { type: 'instant' }, rewards: { exp: 12, cultivation: 6 }, effects: [{ type: 'setFlag', key: 'connected_xuanming_clue_to_huanyinfang', value: true }],
     log: '旧暗号与岐地尾随路线重新对上：至少有一部分玄冥教人手在互相提防的同时，还在盯着幻音坊的动作。你没有因此推断出任何核心卧底身份。'
   },
   {
-    id: 's1_huanyinfang_formal_nvdi_meet_helped',
-    season: 1,
-    category: 'main',
-    location: 'huanyinfang',
-    title: '女帝召见',
-    desc: '你在外围替幻音坊解过一次围，又始终没有越界追问。你的名声与这份分寸，让女帝决定亲自见你一面。',
-    conditions: [
-      { type: 'eventCompleted', event: 's1_huanyinfang_formal_attention' },
-      { type: 'flagTrue', key: 'huanyinfang_contact_decided' },
-      { type: 'flagTrue', key: 'helped_huanyinfang' },
-      { type: 'reputationGte', value: 90 },
-      { type: 'flagFalse', key: 'met_nvdi_formally' }
-    ],
-    action: { type: 'instant' },
-    rewards: { exp: 28, reputation: 5 },
-    effects: [
-      { type: 'setCharacterMet', character: 'nvdi', value: true },
-      { type: 'changeAffinity', character: 'nvdi', value: 10 },
-      { type: 'setPersonalFlag', character: 'nvdi', key: 'first_meeting_helped_outer_agents', value: true },
-      { type: 'setFlag', key: 'met_nvdi_formally', value: true },
-      { type: 'setQuest', value: '幻音坊的真正打算' }
-    ],
+    id: 's1_huanyinfang_formal_nvdi_meet_helped', season: 1, category: 'main', location: 'huanyinfang',
+    title: '女帝召见', desc: '你在外围替幻音坊解过一次围，又始终没有越界追问。你的名声与这份分寸，让女帝决定亲自见你一面。',
+    conditions: [{ type: 'eventCompleted', event: 's1_huanyinfang_formal_attention' }, { type: 'flagTrue', key: 'huanyinfang_contact_decided' }, { type: 'flagTrue', key: 'helped_huanyinfang' }, { type: 'reputationGte', value: 90 }, { type: 'flagFalse', key: 'met_nvdi_formally' }],
+    action: { type: 'instant' }, rewards: { exp: 28, reputation: 5 },
+    effects: [{ type: 'setCharacterMet', character: 'nvdi', value: true }, { type: 'changeAffinity', character: 'nvdi', value: 10 }, { type: 'setPersonalFlag', character: 'nvdi', key: 'first_meeting_helped_outer_agents', value: true }, { type: 'setFlag', key: 'met_nvdi_formally', value: true }, { type: 'setQuest', value: '幻音坊的真正打算' }],
     log: '因为你此前帮过幻音坊外围人手，又没有越界，女帝对你的第一判断偏向“可以继续观察的江湖人”。你们正式相识，但你并不是她围绕李星云布局的核心筹码。'
   },
   {
-    id: 's1_huanyinfang_formal_nvdi_meet_neutral',
-    season: 1,
-    category: 'main',
-    location: 'huanyinfang',
-    title: '女帝召见',
-    desc: '你没有帮幻音坊，也没有主动与其为敌。随着名声渐起，女帝仍决定见一见这个在几场风波边缘反复出现的江湖人。',
-    conditions: [
-      { type: 'eventCompleted', event: 's1_huanyinfang_formal_attention' },
-      { type: 'flagTrue', key: 'huanyinfang_contact_decided' },
-      { type: 'flagFalse', key: 'helped_huanyinfang' },
-      { type: 'reputationGte', value: 90 },
-      { type: 'flagFalse', key: 'met_nvdi_formally' }
-    ],
-    action: { type: 'instant' },
-    rewards: { exp: 24, reputation: 3 },
-    effects: [
-      { type: 'setCharacterMet', character: 'nvdi', value: true },
-      { type: 'changeAffinity', character: 'nvdi', value: 2 },
-      { type: 'setPersonalFlag', character: 'nvdi', key: 'first_meeting_kept_distance', value: true },
-      { type: 'setFlag', key: 'met_nvdi_formally', value: true },
-      { type: 'setQuest', value: '幻音坊的真正打算' }
-    ],
+    id: 's1_huanyinfang_formal_nvdi_meet_neutral', season: 1, category: 'main', location: 'huanyinfang',
+    title: '女帝召见', desc: '你没有帮幻音坊，也没有主动与其为敌。随着名声渐起，女帝仍决定见一见这个在几场风波边缘反复出现的江湖人。',
+    conditions: [{ type: 'eventCompleted', event: 's1_huanyinfang_formal_attention' }, { type: 'flagTrue', key: 'huanyinfang_contact_decided' }, { type: 'flagFalse', key: 'helped_huanyinfang' }, { type: 'reputationGte', value: 90 }, { type: 'flagFalse', key: 'met_nvdi_formally' }],
+    action: { type: 'instant' }, rewards: { exp: 24, reputation: 3 },
+    effects: [{ type: 'setCharacterMet', character: 'nvdi', value: true }, { type: 'changeAffinity', character: 'nvdi', value: 2 }, { type: 'setPersonalFlag', character: 'nvdi', key: 'first_meeting_kept_distance', value: true }, { type: 'setFlag', key: 'met_nvdi_formally', value: true }, { type: 'setQuest', value: '幻音坊的真正打算' }],
     log: '女帝把这次会面当成一次审视：你没有替幻音坊办事，也没有表现敌意。你们正式相识，但她暂时只把你视为需要记住的江湖变量。'
   },
   {
-    id: 's1_huanyinfang_formal_nvdi_followup_helped',
-    season: 1,
-    category: 'character',
-    location: 'huanyinfang',
-    title: '女帝的留问',
-    desc: '正式见面后，女帝又留下一个很短的问题：你此前看见的玄冥教异样，究竟有多少是亲眼确认。',
-    conditions: [
-      { type: 'flagTrue', key: 'met_nvdi_formally' },
-      { type: 'flagTrue', key: 'helped_huanyinfang' },
-      { type: 'affinityGte', character: 'nvdi', value: 10 },
-      { type: 'eventNotCompleted', event: 's1_huanyinfang_formal_nvdi_followup_helped' }
-    ],
-    action: { type: 'instant' },
-    rewards: { exp: 10 },
-    effects: [
-      { type: 'changeAffinity', character: 'nvdi', value: 5 },
-      { type: 'setPersonalFlag', character: 'nvdi', key: 'heard_players_xuanming_judgment', value: true }
-    ],
+    id: 's1_huanyinfang_formal_nvdi_followup_helped', season: 1, category: 'character', location: 'huanyinfang',
+    title: '女帝的留问', desc: '正式见面后，女帝又留下一个很短的问题：你此前看见的玄冥教异样，究竟有多少是亲眼确认。',
+    conditions: [{ type: 'flagTrue', key: 'met_nvdi_formally' }, { type: 'flagTrue', key: 'helped_huanyinfang' }, { type: 'affinityGte', character: 'nvdi', value: 10 }, { type: 'eventNotCompleted', event: 's1_huanyinfang_formal_nvdi_followup_helped' }],
+    action: { type: 'instant' }, rewards: { exp: 10 },
+    effects: [{ type: 'changeAffinity', character: 'nvdi', value: 5 }, { type: 'setPersonalFlag', character: 'nvdi', key: 'heard_players_xuanming_judgment', value: true }],
     log: '你只说自己能够确认的部分，没有把猜测当成事实。女帝对你的判断又向“可信几分”挪了一点。'
   },
   {
-    id: 's1_huanyinfang_formal_nvdi_followup_distance',
-    season: 1,
-    category: 'character',
-    location: 'huanyinfang',
-    title: '女帝的回帖',
-    desc: '你此前刻意与幻音坊保持距离。正式相识后，一张没有多余措辞的回帖送到你手里，意思很明确：互不欠情，也暂不为敌。',
-    conditions: [
-      { type: 'flagTrue', key: 'met_nvdi_formally' },
-      { type: 'flagFalse', key: 'helped_huanyinfang' },
-      { type: 'affinityGte', character: 'nvdi', value: 0 },
-      { type: 'eventNotCompleted', event: 's1_huanyinfang_formal_nvdi_followup_distance' }
-    ],
-    action: { type: 'instant' },
-    rewards: { exp: 8 },
-    effects: [
-      { type: 'changeAffinity', character: 'nvdi', value: 2 },
-      { type: 'setPersonalFlag', character: 'nvdi', key: 'accepted_mutual_distance', value: true }
-    ],
+    id: 's1_huanyinfang_formal_nvdi_followup_distance', season: 1, category: 'character', location: 'huanyinfang',
+    title: '女帝的回帖', desc: '你此前刻意与幻音坊保持距离。正式相识后，一张没有多余措辞的回帖送到你手里，意思很明确：互不欠情，也暂不为敌。',
+    conditions: [{ type: 'flagTrue', key: 'met_nvdi_formally' }, { type: 'flagFalse', key: 'helped_huanyinfang' }, { type: 'affinityGte', character: 'nvdi', value: 0 }, { type: 'eventNotCompleted', event: 's1_huanyinfang_formal_nvdi_followup_distance' }],
+    action: { type: 'instant' }, rewards: { exp: 8 },
+    effects: [{ type: 'changeAffinity', character: 'nvdi', value: 2 }, { type: 'setPersonalFlag', character: 'nvdi', key: 'accepted_mutual_distance', value: true }],
     log: '你接受了这种彼此留有余地的关系。女帝没有因此信任你，但也没有把你划入敌对一侧。'
   },
   {
-    id: 's1_huanyinfang_formal_strategy_shift',
-    season: 1,
-    category: 'main',
-    location: 'huanyinfang',
-    title: '夺剑之外',
-    desc: '李星云的身份逐渐公开后，幻音坊对他的判断已经不再只是“夺下龙泉剑”。岐地开始考虑更长远的政治价值。',
-    conditions: [
-      { type: 'flagTrue', key: 'met_nvdi_formally' },
-      { type: 'reputationGte', value: 105 },
-      { type: 'eventNotCompleted', event: 's1_huanyinfang_formal_strategy_shift' }
-    ],
-    action: { type: 'instant' },
-    rewards: { exp: 32, cultivation: 8, reputation: 8 },
-    effects: [
-      { type: 'setFlag', key: 'huanyinfang_strategy_shifted', value: true },
-      { type: 'setFlag', key: 's1_stage_d_complete', value: true },
-      { type: 'unlockLocation', id: 'tongwenguan' },
-      { type: 'setQuest', value: '通文馆介入' },
-      { type: 'setChapter', value: 's1_tongwenguan' }
-    ],
+    id: 's1_huanyinfang_formal_strategy_shift', season: 1, category: 'main', location: 'huanyinfang',
+    title: '夺剑之外', desc: '李星云的身份逐渐公开后，幻音坊对他的判断已经不再只是“夺下龙泉剑”。岐地开始考虑更长远的政治价值。',
+    conditions: [{ type: 'eventCompleted', event: 's1_huanyinfang_formal_nvdi_followup_helped' }, { type: 'flagTrue', key: 'met_nvdi_formally' }, { type: 'flagFalse', key: 's1_stage_d_complete' }, { type: 'reputationGte', value: 105 }, { type: 'eventNotCompleted', event: 's1_huanyinfang_formal_strategy_shift' }],
+    action: { type: 'instant' }, rewards: { exp: 32, cultivation: 8, reputation: 8 },
+    effects: [{ type: 'setFlag', key: 'huanyinfang_strategy_shifted', value: true }, { type: 'setFlag', key: 's1_stage_d_complete', value: true }, { type: 'unlockLocation', id: 'tongwenguan' }, { type: 'setQuest', value: '通文馆介入' }, { type: 'setChapter', value: 's1_tongwenguan' }],
     log: '你确认幻音坊已经把李星云与龙泉剑看成同一场政治棋局的一部分。女帝与你的关系也从“未曾相识”变成了真实存在的江湖关系。幻音坊篇至此收束。'
+  },
+  {
+    id: 's1_huanyinfang_formal_strategy_shift_distance', season: 1, category: 'main', location: 'huanyinfang',
+    title: '夺剑之外', desc: '李星云的身份逐渐公开后，幻音坊对他的判断已经不再只是“夺下龙泉剑”。岐地开始考虑更长远的政治价值。',
+    conditions: [{ type: 'eventCompleted', event: 's1_huanyinfang_formal_nvdi_followup_distance' }, { type: 'flagTrue', key: 'met_nvdi_formally' }, { type: 'flagFalse', key: 's1_stage_d_complete' }, { type: 'reputationGte', value: 105 }, { type: 'eventNotCompleted', event: 's1_huanyinfang_formal_strategy_shift_distance' }],
+    action: { type: 'instant' }, rewards: { exp: 32, cultivation: 8, reputation: 8 },
+    effects: [{ type: 'setFlag', key: 'huanyinfang_strategy_shifted', value: true }, { type: 'setFlag', key: 's1_stage_d_complete', value: true }, { type: 'unlockLocation', id: 'tongwenguan' }, { type: 'setQuest', value: '通文馆介入' }, { type: 'setChapter', value: 's1_tongwenguan' }],
+    log: '你确认幻音坊已经把李星云与龙泉剑看成同一场政治棋局的一部分。即使你与女帝保持距离，这段关系也已经成为真实存在的江湖变量。幻音坊篇至此收束。'
   }
 ];
 
