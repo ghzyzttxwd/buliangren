@@ -55,6 +55,7 @@ export function defaultState() {
         introSeen: false,
         scoutDefeated: false,
         cangbingVisited: false,
+        cangbingGuardDefeated: false,
         chapter1Done: false
       }
     },
@@ -95,17 +96,24 @@ function deepMerge(base, incoming) {
   return out;
 }
 
+function unlock(state, id) {
+  if (!state.world.unlockedLocations.includes(id)) state.world.unlockedLocations.push(id);
+}
+
 function normalizeV2(raw) {
   const state = deepMerge(defaultState(), raw);
   state.saveVersion = SAVE_VERSION;
   state.gameVersion = GAME_VERSION;
   state.world.unlockedLocations = [...new Set(['yuzhou', ...(state.world.unlockedLocations || [])])];
-  if (state.world.flags.scoutDefeated && !state.world.unlockedLocations.includes('cangbing')) {
-    state.world.unlockedLocations.push('cangbing');
+  if (state.world.flags.scoutDefeated) unlock(state, 'cangbing');
+  if (state.world.flags.cangbingGuardDefeated) unlock(state, 'xuanming');
+  if (state.world.flags.s1_xuanming_node_done) {
+    unlock(state, 'qiguo');
+    unlock(state, 'huanyinfang');
   }
-  if (state.world.flags.chapter1Done && !state.world.unlockedLocations.includes('qiguo')) {
-    state.world.unlockedLocations.push('qiguo');
-  }
+  if (state.world.flags.s1_huanyinfang_node_done) unlock(state, 'tongwenguan');
+  if (state.world.flags.s1_tongwenguan_node_done) unlock(state, 'longquan');
+  if (state.world.flags.chapter1Done) unlock(state, 'qiguo');
   normalizeRelationships(state.relationships);
   return state;
 }
@@ -131,6 +139,7 @@ export function migrateSave(raw) {
   state.world.reputation = (flags.scoutDefeated ? 20 : 0) + (flags.cangbingVisited ? 15 : 0);
 
   if (flags.scoutDefeated) state.world.unlockedLocations.push('cangbing');
+  if (flags.cangbingGuardDefeated) state.world.unlockedLocations.push('xuanming');
   if (flags.chapter1Done) state.world.unlockedLocations.push('qiguo');
   state.world.unlockedLocations = [...new Set(state.world.unlockedLocations)];
 
