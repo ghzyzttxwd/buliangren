@@ -4,6 +4,11 @@ function list(state, key) {
   return Array.isArray(state?.events?.[key]) ? state.events[key] : [];
 }
 
+function counter(state, key) {
+  const value = state?.events?.counters?.[key];
+  return Number.isFinite(value) ? value : 0;
+}
+
 export function checkCondition(condition, state) {
   const c = condition || {};
   switch (c.type) {
@@ -27,6 +32,7 @@ export function checkCondition(condition, state) {
     case 'locationUnlocked': return (state?.world?.unlockedLocations || []).includes(c.location);
     case 'seasonIs': return state?.world?.season === c.value;
     case 'chapterIs': return state?.world?.chapter === c.value;
+    case 'counterLt': return counter(state, c.key) < c.value;
     default: return false;
   }
 }
