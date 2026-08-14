@@ -1,4 +1,4 @@
-const CACHE = 'buliangren-jianghuxing-v0.3.8';
+const CACHE = 'buliangren-jianghuxing-v0.3.9';
 const ASSETS = [
   './',
   './index.html',
@@ -13,6 +13,7 @@ const ASSETS = [
   './src/conditions.js',
   './src/events.js',
   './src/events-s1-longquan.js',
+  './src/events-s1-finale.js',
   './src/version.js',
   './manifest.webmanifest',
   './assets/icon.svg'
