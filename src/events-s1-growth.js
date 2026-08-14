@@ -15,14 +15,14 @@ const STAGE_H_GROWTH_EVENTS = [
     conditions: [{ type: 'eventCompleted', event: 's1_growth_hidden_torn_sword_notes' }, { type: 'silverGte', value: 120 }, { type: 'eventNotCompleted', event: 's1_growth_restore_sword_notes' }],
     action: { type: 'instant' }, rewards: { silver: -120, exp: 12, learnMartialArt: 'folding_wind_sword' },
     effects: [{ type: 'setFlag', key: 'restored_torn_sword_notes', value: true }],
-    log: '你花了 120 两银子，请老剑客把残缺招路重新理顺。残谱没有名号，你按其中三段折返剑路将其称作【折风剑式】。这门剑式已经真正归入你的武学。'
+    log: '你花了 120 两银子，请老剑客把残缺招路重新理顺。残谱没有名号，你按其中三段折返剑路将其称作【折风剑式】。这门剑式已经真正归入你的武学，当前熟练 Lv.1。'
   },
   {
     id: 's1_growth_test_folding_wind_sword', season: 1, category: 'encounter', location: 'cangbing',
     title: '残谱试锋', desc: '新整理出的折风剑式还没有真正见过血。藏兵谷外围正有玄冥教残余力士借乱滋事，可以拿来试一试剑。', retryOnFail: true,
     conditions: [{ type: 'eventCompleted', event: 's1_growth_restore_sword_notes' }, { type: 'eventNotCompleted', event: 's1_growth_test_folding_wind_sword' }],
-    action: { type: 'battle', enemies: ['guard'] }, rewards: { exp: 22, cultivation: 6, reputation: 3 }, effects: [],
-    log: '你在实战中把【折风剑式】完整走了一遍。它不是顶级神功，却第一次证明：江湖探索本身也能变成真正可用的武学成长。',
+    action: { type: 'battle', enemies: ['guard'] }, rewards: { exp: 22, cultivation: 6, reputation: 3, martialArtMastery: { id: 'folding_wind_sword', amount: 1 } }, effects: [],
+    log: '你在实战中把【折风剑式】完整走了一遍。招路从纸面真正落到了手上，熟练度提升到 Lv.2。江湖探索第一次形成了“发现残谱 → 学会武学 → 实战精进”的完整成长链。',
     failureLog: '新剑式还不够熟，你先退开重新琢磨招路。这场试锋仍可再来。'
   }
 ];
