@@ -111,6 +111,7 @@
 .location-list .location:nth-child(8) { left: 37%; top: 69%; }
 .location-list .location:nth-child(9) { right: 6%; top: 62%; }
 .location-list .location:nth-child(10) { left: 53%; top: 82%; }
+.location-list .location:nth-child(11) { left: 10%; top: 83%; }
 
 @media (max-width: 380px) {
   .location-list { height: 560px; }
@@ -118,4 +119,5 @@
   .location-list .location:nth-child(2) { left: 36%; }
   .location-list .location:nth-child(5) { left: 39%; }
   .location-list .location:nth-child(8) { left: 35%; }
+  .location-list .location:nth-child(11) { left: 8%; }
 }
