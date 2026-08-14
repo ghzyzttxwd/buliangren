@@ -417,6 +417,207 @@ export const EVENTS = [
       { type: 'setChapter', value: 's1_huanyinfang' }
     ],
     log: '玄冥教的搜捕与内斗已经上升到更高层级。与此同时，另一股势力也开始围绕李星云与龙泉剑重新部署。玄冥教篇至此收束。'
+  },
+
+  // ---------------------------------------------------------------------------
+  // 阶段 D：幻音坊篇
+  // 原作锚点：幻音坊从夺取龙泉剑逐步升级为围绕李星云身份进行政治判断与拉拢；
+  // 玩家只能影响外围合作与自己和女帝的关系，不能取代姬如雪与李星云的原作关系。
+  // ---------------------------------------------------------------------------
+  {
+    id: 's1_huanyinfang_formal_attention',
+    season: 1,
+    category: 'main',
+    location: 'qiguo',
+    title: '幻音坊的目光',
+    desc: '玄冥教把局势推高之后，岐地也开始重新部署。九天圣姬的踪迹比之前更频繁地出现在李星云行进路线附近。',
+    conditions: [
+      { type: 'flagTrue', key: 's1_stage_c_complete' },
+      { type: 'locationUnlocked', location: 'qiguo' },
+      { type: 'eventNotCompleted', event: 's1_huanyinfang_formal_attention' }
+    ],
+    action: { type: 'instant' },
+    rewards: { exp: 22, reputation: 5 },
+    effects: [
+      { type: 'setQuest', value: '岐地试探' }
+    ],
+    log: '你在岐地确认：幻音坊已经不再只让姬如雪单线行动，更多圣姬开始围绕李星云与龙泉剑重新布置人手。'
+  },
+  {
+    id: 's1_huanyinfang_formal_choose_help',
+    season: 1,
+    category: 'side',
+    location: 'qiguo',
+    title: '截住追兵',
+    desc: '一队幻音坊外围人手被玄冥教探子盯上。你可以替她们截住追兵，也可以选择不插手。',
+    retryOnFail: true,
+    conditions: [
+      { type: 'eventCompleted', event: 's1_huanyinfang_formal_attention' },
+      { type: 'flagFalse', key: 'huanyinfang_contact_decided' },
+      { type: 'eventNotCompleted', event: 's1_huanyinfang_formal_choose_help' }
+    ],
+    action: { type: 'battle', enemies: ['scout'] },
+    rewards: { silver: 30, exp: 20, cultivation: 5, reputation: 5 },
+    effects: [
+      { type: 'setFlag', key: 'helped_huanyinfang', value: true },
+      { type: 'setFlag', key: 'huanyinfang_contact_decided', value: true }
+    ],
+    log: '你替幻音坊外围人手截住玄冥教追兵，却没有追问她们正在执行什么任务。这份分寸被岐地的人记了下来。',
+    failureLog: '你没能完全截住追兵。幻音坊的人自行脱身，这次介入没有形成有效结果。'
+  },
+  {
+    id: 's1_huanyinfang_formal_choose_distance',
+    season: 1,
+    category: 'side',
+    location: 'qiguo',
+    title: '不插手这场追逐',
+    desc: '幻音坊与玄冥教在远处互相盯梢。你可以保持距离，让双方自己处理这场追逐。',
+    conditions: [
+      { type: 'eventCompleted', event: 's1_huanyinfang_formal_attention' },
+      { type: 'flagFalse', key: 'huanyinfang_contact_decided' },
+      { type: 'eventNotCompleted', event: 's1_huanyinfang_formal_choose_distance' }
+    ],
+    action: { type: 'instant' },
+    rewards: { exp: 8 },
+    effects: [
+      { type: 'setFlag', key: 'helped_huanyinfang', value: false },
+      { type: 'setFlag', key: 'huanyinfang_contact_decided', value: true }
+    ],
+    log: '你没有替任何一方出手。幻音坊的人最终摆脱尾随，也记住了你有意保持距离的态度。'
+  },
+  {
+    id: 's1_huanyinfang_formal_hidden_old_codes',
+    season: 1,
+    category: 'hidden',
+    location: 'qiguo',
+    title: '旧暗号的回声',
+    desc: '你在岐地再次看到一段与玄冥教旧传令有关的痕迹。前面追出的两套号令，让你比旁人更早看出这次尾随并不单纯。',
+    conditions: [
+      { type: 'eventCompleted', event: 's1_huanyinfang_formal_attention' },
+      { type: 'flagTrue', key: 'xuanming_internal_routes_compared' },
+      { type: 'eventNotCompleted', event: 's1_huanyinfang_formal_hidden_old_codes' }
+    ],
+    action: { type: 'instant' },
+    rewards: { exp: 12, cultivation: 6 },
+    effects: [
+      { type: 'setFlag', key: 'connected_xuanming_clue_to_huanyinfang', value: true }
+    ],
+    log: '旧暗号与岐地尾随路线重新对上：至少有一部分玄冥教人手在互相提防的同时，还在盯着幻音坊的动作。你没有因此推断出任何核心卧底身份。'
+  },
+  {
+    id: 's1_huanyinfang_formal_nvdi_meet_helped',
+    season: 1,
+    category: 'main',
+    location: 'huanyinfang',
+    title: '女帝召见',
+    desc: '你在外围替幻音坊解过一次围，又始终没有越界追问。你的名声与这份分寸，让女帝决定亲自见你一面。',
+    conditions: [
+      { type: 'eventCompleted', event: 's1_huanyinfang_formal_attention' },
+      { type: 'flagTrue', key: 'huanyinfang_contact_decided' },
+      { type: 'flagTrue', key: 'helped_huanyinfang' },
+      { type: 'reputationGte', value: 90 },
+      { type: 'flagFalse', key: 'met_nvdi_formally' }
+    ],
+    action: { type: 'instant' },
+    rewards: { exp: 28, reputation: 5 },
+    effects: [
+      { type: 'setCharacterMet', character: 'nvdi', value: true },
+      { type: 'changeAffinity', character: 'nvdi', value: 10 },
+      { type: 'setPersonalFlag', character: 'nvdi', key: 'first_meeting_helped_outer_agents', value: true },
+      { type: 'setFlag', key: 'met_nvdi_formally', value: true },
+      { type: 'setQuest', value: '幻音坊的真正打算' }
+    ],
+    log: '因为你此前帮过幻音坊外围人手，又没有越界，女帝对你的第一判断偏向“可以继续观察的江湖人”。你们正式相识，但你并不是她围绕李星云布局的核心筹码。'
+  },
+  {
+    id: 's1_huanyinfang_formal_nvdi_meet_neutral',
+    season: 1,
+    category: 'main',
+    location: 'huanyinfang',
+    title: '女帝召见',
+    desc: '你没有帮幻音坊，也没有主动与其为敌。随着名声渐起，女帝仍决定见一见这个在几场风波边缘反复出现的江湖人。',
+    conditions: [
+      { type: 'eventCompleted', event: 's1_huanyinfang_formal_attention' },
+      { type: 'flagTrue', key: 'huanyinfang_contact_decided' },
+      { type: 'flagFalse', key: 'helped_huanyinfang' },
+      { type: 'reputationGte', value: 90 },
+      { type: 'flagFalse', key: 'met_nvdi_formally' }
+    ],
+    action: { type: 'instant' },
+    rewards: { exp: 24, reputation: 3 },
+    effects: [
+      { type: 'setCharacterMet', character: 'nvdi', value: true },
+      { type: 'changeAffinity', character: 'nvdi', value: 2 },
+      { type: 'setPersonalFlag', character: 'nvdi', key: 'first_meeting_kept_distance', value: true },
+      { type: 'setFlag', key: 'met_nvdi_formally', value: true },
+      { type: 'setQuest', value: '幻音坊的真正打算' }
+    ],
+    log: '女帝把这次会面当成一次审视：你没有替幻音坊办事，也没有表现敌意。你们正式相识，但她暂时只把你视为需要记住的江湖变量。'
+  },
+  {
+    id: 's1_huanyinfang_formal_nvdi_followup_helped',
+    season: 1,
+    category: 'character',
+    location: 'huanyinfang',
+    title: '女帝的留问',
+    desc: '正式见面后，女帝又留下一个很短的问题：你此前看见的玄冥教异样，究竟有多少是亲眼确认。',
+    conditions: [
+      { type: 'flagTrue', key: 'met_nvdi_formally' },
+      { type: 'flagTrue', key: 'helped_huanyinfang' },
+      { type: 'affinityGte', character: 'nvdi', value: 10 },
+      { type: 'eventNotCompleted', event: 's1_huanyinfang_formal_nvdi_followup_helped' }
+    ],
+    action: { type: 'instant' },
+    rewards: { exp: 10 },
+    effects: [
+      { type: 'changeAffinity', character: 'nvdi', value: 5 },
+      { type: 'setPersonalFlag', character: 'nvdi', key: 'heard_players_xuanming_judgment', value: true }
+    ],
+    log: '你只说自己能够确认的部分，没有把猜测当成事实。女帝对你的判断又向“可信几分”挪了一点。'
+  },
+  {
+    id: 's1_huanyinfang_formal_nvdi_followup_distance',
+    season: 1,
+    category: 'character',
+    location: 'huanyinfang',
+    title: '女帝的回帖',
+    desc: '你此前刻意与幻音坊保持距离。正式相识后，一张没有多余措辞的回帖送到你手里，意思很明确：互不欠情，也暂不为敌。',
+    conditions: [
+      { type: 'flagTrue', key: 'met_nvdi_formally' },
+      { type: 'flagFalse', key: 'helped_huanyinfang' },
+      { type: 'affinityGte', character: 'nvdi', value: 0 },
+      { type: 'eventNotCompleted', event: 's1_huanyinfang_formal_nvdi_followup_distance' }
+    ],
+    action: { type: 'instant' },
+    rewards: { exp: 8 },
+    effects: [
+      { type: 'changeAffinity', character: 'nvdi', value: 2 },
+      { type: 'setPersonalFlag', character: 'nvdi', key: 'accepted_mutual_distance', value: true }
+    ],
+    log: '你接受了这种彼此留有余地的关系。女帝没有因此信任你，但也没有把你划入敌对一侧。'
+  },
+  {
+    id: 's1_huanyinfang_formal_strategy_shift',
+    season: 1,
+    category: 'main',
+    location: 'huanyinfang',
+    title: '夺剑之外',
+    desc: '李星云的身份逐渐公开后，幻音坊对他的判断已经不再只是“夺下龙泉剑”。岐地开始考虑更长远的政治价值。',
+    conditions: [
+      { type: 'flagTrue', key: 'met_nvdi_formally' },
+      { type: 'reputationGte', value: 105 },
+      { type: 'eventNotCompleted', event: 's1_huanyinfang_formal_strategy_shift' }
+    ],
+    action: { type: 'instant' },
+    rewards: { exp: 32, cultivation: 8, reputation: 8 },
+    effects: [
+      { type: 'setFlag', key: 'huanyinfang_strategy_shifted', value: true },
+      { type: 'setFlag', key: 's1_stage_d_complete', value: true },
+      { type: 'unlockLocation', id: 'tongwenguan' },
+      { type: 'setQuest', value: '通文馆介入' },
+      { type: 'setChapter', value: 's1_tongwenguan' }
+    ],
+    log: '你确认幻音坊已经把李星云与龙泉剑看成同一场政治棋局的一部分。女帝与你的关系也从“未曾相识”变成了真实存在的江湖关系。幻音坊篇至此收束。'
   }
 ];
 
