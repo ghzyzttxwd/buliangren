@@ -1,6 +1,7 @@
 import { CHARACTERS, SKILLS, LOCATIONS, ITEMS } from './data.js';
 import { loadState, saveState, resetState } from './state.js';
 import { createBattle, useSkill } from './battle.js';
+import { buildPlayerCombatant } from './combatants.js';
 import {
   getRealmName,
   getBreakthroughInfo,
@@ -20,7 +21,7 @@ let toastTimer = null;
 const app = document.querySelector('#app');
 
 function pct(v,max){ return Math.max(0, Math.min(100, Math.round(v/max*100))); }
-function esc(s=''){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function esc(s=''){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c])); }
 function persist(){ state = saveState(state); }
 function showToast(msg){ clearTimeout(toastTimer); const old=document.querySelector('.toast'); old?.remove(); const el=document.createElement('div'); el.className='toast'; el.textContent=msg; document.body.appendChild(el); toastTimer=setTimeout(()=>el.remove(),1900); }
 function relationLabel(value=0){ if(value>=70)return '亲近'; if(value>=45)return '信任'; if(value>=20)return '熟悉'; if(value>=0)return '初识'; if(value>=-40)return '冷淡'; return '敌视'; }
@@ -92,12 +93,14 @@ function worldView(){
 }
 
 function partyView(){
+  const playerCombat = buildPlayerCombatant(state, state.martialArts);
   return `<main class="page"><div class="section-title"><h3>同行之人</h3><span>${state.party.length} / 4 上阵</span></div><section class="character-grid">${Object.values(CHARACTERS).map(c=>{
     const inParty=state.party.includes(c.id); const locked=c.locked && !inParty;
     const level=c.id==='player'?state.player.level:c.level;
     const rel=state.relationships[c.id];
+    const stats=c.id==='player'?playerCombat:c;
     const extra=c.id==='player'?`境界：${getRealmName(state.player.realm)} · 修为 ${state.player.cultivation}`:rel?`关系：${relationLabel(rel.affinity)}${rel.met?'':' · 尚未相识'}`:`武学：${c.skills.map(id=>SKILLS[id].name).join('、')}`;
-    return `<article class="character-card ${locked?'locked':''}"><div class="portrait" data-char="${c.short}" style="--c1:${c.c1};--c2:${c.c2}"><span class="level">Lv.${level}</span></div><div class="char-info"><div class="rarity">${c.rarity}${inParty?' · 同行':''}</div><h3>${c.name}</h3><div class="stat-row"><span>攻 <b>${c.attack}</b></span><span>防 <b>${c.defense}</b></span><span>速 <b>${c.speed}</b></span></div><div class="hpbar"><span style="width:100%"></span></div>${locked?`<div class="lock-note">🔒 ${c.unlock}</div>`:`<div class="lock-note">${extra}</div>`}</div></article>`;
+    return `<article class="character-card ${locked?'locked':''}"><div class="portrait" data-char="${c.short}" style="--c1:${c.c1};--c2:${c.c2}"><span class="level">Lv.${level}</span></div><div class="char-info"><div class="rarity">${c.rarity}${inParty?' · 同行':''}</div><h3>${c.name}</h3><div class="stat-row"><span>攻 <b>${stats.attack}</b></span><span>防 <b>${stats.defense}</b></span><span>速 <b>${stats.speed}</b></span></div><div class="hpbar"><span style="width:100%"></span></div>${locked?`<div class="lock-note">🔒 ${c.unlock}</div>`:`<div class="lock-note">${extra}</div>`}</div></article>`;
   }).join('')}</section></main>`;
 }
 
@@ -140,7 +143,7 @@ function startEvent(eventId){
   const event=started.event;
   if(!started.ok || !event){ showToast('当前条件不满足'); return; }
   if(event.action?.type==='battle'){
-    battle=createBattle(event.action.enemies||[],state.party,state.martialArts);
+    battle=createBattle(event.action.enemies||[],state.party,state.martialArts,state);
     battle.eventId=event.id;
     modal=null;
     persist();
