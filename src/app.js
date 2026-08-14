@@ -1,6 +1,6 @@
 import { CHARACTERS, SKILLS, LOCATIONS, ITEMS } from './data.js';
 import { loadState, saveState, resetState } from './state.js';
-import { createBattle, useSkill } from './battle.js';
+import { createBattle, useSkill, basicAttack, getCurrentActor } from './battle.js';
 import { buildPlayerCombatant } from './combatants.js';
 import {
   getRealmName,
@@ -21,7 +21,7 @@ let toastTimer = null;
 const app = document.querySelector('#app');
 
 function pct(v,max){ return Math.max(0, Math.min(100, Math.round(v/max*100))); }
-function esc(s=''){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c])); }
+function esc(s=''){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function persist(){ state = saveState(state); }
 function showToast(msg){ clearTimeout(toastTimer); const old=document.querySelector('.toast'); old?.remove(); const el=document.createElement('div'); el.className='toast'; el.textContent=msg; document.body.appendChild(el); toastTimer=setTimeout(()=>el.remove(),1900); }
 function relationLabel(value=0){ if(value>=70)return '亲近'; if(value>=45)return '信任'; if(value>=20)return '熟悉'; if(value>=0)return '初识'; if(value>=-40)return '冷淡'; return '敌视'; }
@@ -123,13 +123,13 @@ function locationModal(id){
 }
 
 function battleModal(){
-  const current=battle?.allies[battle.allyIndex];
+  const current=getCurrentActor(battle);
   const fighter=(f)=>`<div class="fighter ${current===f&&battle.status==='active'?'current':''} ${f.hp<=0?'dead':''}"><div class="fighter-top"><b>${f.name}</b><small>${Math.max(0,f.hp)}/${f.maxHp}</small></div><div class="hpbar"><span style="width:${pct(f.hp,f.maxHp)}%"></span></div></div>`;
   let controls='';
-  if(battle.status==='active' && current) controls=`<div class="skill-buttons">${current.skills.map(id=>{const s=SKILLS[id];return `<button class="skill-btn" data-skill="${id}"><b>${s.name}</b><small>${s.heal?'恢复气血':`威力 ${Math.round(s.power*100)}%`}</small></button>`}).join('')}</div>`;
+  if(battle.status==='active' && current?.side==='ally') controls=`<div class="skill-buttons"><button class="skill-btn" data-basic-attack><b>普通攻击</b><small>无需消耗 · 威力 100%</small></button>${current.skills.map(id=>{const s=SKILLS[id];return `<button class="skill-btn" data-skill="${id}"><b>${s.name}</b><small>${s.heal?'恢复气血':`威力 ${Math.round(s.power*100)}%`}</small></button>`}).join('')}</div>`;
   if(battle.status==='win') controls='<button class="primary full" data-battle-finish>领取战果</button>';
   if(battle.status==='lose') controls='<button class="secondary full" data-battle-leave>暂时撤退</button>';
-  return `<div class="modal"><section class="sheet"><div class="sheet-handle"></div><div class="battle-title"><div><div class="eyebrow">即时演算 · 回合制</div><h2>交锋</h2></div><span class="turn-pill">第 ${battle.round} 回合</span></div><div class="combatants"><div class="side">${battle.allies.map(fighter).join('')}</div><div class="vs">VS</div><div class="side">${battle.enemies.map(fighter).join('')}</div></div><div class="battle-log">${battle.log.slice(-8).map(x=>`<div>· ${esc(x)}</div>`).join('')}</div>${controls}</section></div>`;
+  return `<div class="modal"><section class="sheet"><div class="sheet-handle"></div><div class="battle-title"><div><div class="eyebrow">速度演算 · 回合制</div><h2>交锋</h2></div><span class="turn-pill">第 ${battle.round} 回合</span></div><div class="combatants"><div class="side">${battle.allies.map(fighter).join('')}</div><div class="vs">VS</div><div class="side">${battle.enemies.map(fighter).join('')}</div></div><div class="battle-log">${battle.log.slice(-8).map(x=>`<div>· ${esc(x)}</div>`).join('')}</div>${controls}</section></div>`;
 }
 
 function render(){
@@ -198,6 +198,7 @@ function bind(){
   document.querySelectorAll('[data-sheet]').forEach(x=>x.addEventListener('click',e=>e.stopPropagation()));
   document.querySelector('[data-close-btn]')?.addEventListener('click',()=>{modal=null;render();});
   document.querySelector('[data-action="rest"]')?.addEventListener('click',()=>{modal=null;render();showToast('已休整');});
+  document.querySelector('[data-basic-attack]')?.addEventListener('click',()=>{battle=basicAttack(battle);render();});
   document.querySelectorAll('[data-skill]').forEach(b=>b.onclick=()=>{battle=useSkill(battle,b.dataset.skill);render();});
   document.querySelector('[data-battle-finish]')?.addEventListener('click',finishBattle);
   document.querySelector('[data-battle-leave]')?.addEventListener('click',leaveBattle);
