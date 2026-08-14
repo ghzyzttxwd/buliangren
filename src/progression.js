@@ -65,5 +65,14 @@ export function applyRewards(state, rewards = {}) {
   if (rewards.exp) result.levels = addExperience(state, rewards.exp);
   if (rewards.cultivation) state.player.cultivation = Math.max(0, state.player.cultivation + rewards.cultivation);
   if (rewards.reputation) state.world.reputation = Math.max(0, state.world.reputation + rewards.reputation);
+  if (rewards.learnMartialArt) {
+    state.martialArts = state.martialArts || {};
+    const current = state.martialArts[rewards.learnMartialArt] || {};
+    state.martialArts[rewards.learnMartialArt] = {
+      learned: true,
+      mastery: Number.isFinite(current.mastery) ? Math.max(1, current.mastery) : 1,
+      exp: Number.isFinite(current.exp) ? Math.max(0, current.exp) : 0
+    };
+  }
   return result;
 }
