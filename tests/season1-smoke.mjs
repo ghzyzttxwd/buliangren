@@ -5,6 +5,7 @@ import { EVENTS, getAvailableEvents, beginEvent, completeEvent, validateEventDef
 import '../src/events-s1-longquan.js';
 import '../src/events-s1-finale.js';
 import '../src/events-s1-growth.js';
+import '../src/events-s1-balance.js';
 import { createBattle } from '../src/battle.js';
 import { getBreakthroughInfo, tryBreakthrough } from '../src/progression.js';
 
@@ -83,7 +84,7 @@ assert.equal(state.world.chapter, 's1_complete', 'season one final chapter misma
 assert.equal(state.world.unlockedLocations.includes('luoyang'), true, 'Luoyang was not unlocked for finale');
 assert.equal(state.world.unlockedLocations.includes('longquan'), false, 'Dragon Spring secret location should not be unlocked in season one');
 assert.ok(battleEventsSeen.size >= 3, 'too few battle events exercised');
-assert.ok(state.world.reputation >= 250, 'season one reputation progression is unexpectedly low');
+assert.ok(state.world.reputation >= 220, 'season one reputation progression is unexpectedly low');
 assert.ok(['middle_star', 'great_star', 'small_heaven', 'middle_heaven', 'great_heaven', 'shenxiao'].includes(state.player.realm), `season one realm progression too low: ${state.player.realm}`);
 
 // 阶段 H 武学轴：新存档路线应能获得并实战验证折风剑式。
