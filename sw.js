@@ -1,4 +1,4 @@
-const CACHE = 'buliangren-jianghuxing-v0.2.8-stable';
+const CACHE = 'buliangren-jianghuxing-v0.3.0';
 const ASSETS = [
   './',
   './index.html',
