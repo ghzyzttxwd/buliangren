@@ -43,7 +43,7 @@ const unlocked = (state, id) => state?.world?.unlockedLocations?.includes(id);
 export const LOCATIONS = [
   { id:'yuzhou', name:'渝州城', icon:'渝', desc:'暗流涌动的起点。玄冥教正在城外活动。', unlock:()=>true },
   { id:'cangbing', name:'藏兵谷', icon:'藏', desc:'不良人旧部留下的隐秘据点。', unlock:(s)=>unlocked(s,'cangbing') },
-  { id:'xuanming', name:'玄冥教', icon:'冥', desc:'玄冥教势力盘踞之处，高手众多。', unlock:(s)=>unlocked(s,'xuanming') },
+  { id:'xuanming', name:'玄冥教势力', icon:'冥', desc:'玄冥教在中原活动的外围势力范围，并非一处可随意闯入的总舵。', unlock:(s)=>unlocked(s,'xuanming') },
   { id:'tongwenguan', name:'通文馆', icon:'文', desc:'晋地大势力通文馆所在。', unlock:(s)=>unlocked(s,'tongwenguan') },
   { id:'qiguo', name:'岐国', icon:'岐', desc:'凤翔一带，幻音坊势力所在。', unlock:(s)=>unlocked(s,'qiguo') },
   { id:'huanyinfang', name:'幻音坊', icon:'幻', desc:'女帝麾下幻音坊的核心据点。', unlock:(s)=>unlocked(s,'huanyinfang') },
