@@ -270,6 +270,79 @@ export const EVENTS = [
     action: { type: 'instant' }, rewards: { exp: 32, cultivation: 8, reputation: 8 },
     effects: [{ type: 'setFlag', key: 'huanyinfang_strategy_shifted', value: true }, { type: 'setFlag', key: 's1_stage_d_complete', value: true }, { type: 'unlockLocation', id: 'tongwenguan' }, { type: 'setQuest', value: '通文馆介入' }, { type: 'setChapter', value: 's1_tongwenguan' }],
     log: '你确认幻音坊已经把李星云与龙泉剑看成同一场政治棋局的一部分。即使你与女帝保持距离，这段关系也已经成为真实存在的江湖变量。幻音坊篇至此收束。'
+  },
+
+  // ---------------------------------------------------------------------------
+  // 阶段 E：通文馆篇
+  // 原作锚点：张子凡的通文馆身份使晋地势力很早进入李星云一行的关系网；李嗣源随后
+  // 明确要求把李星云带回通文馆。随着李星云身份公开，通文馆与岐国从争夺升级到政治拉拢，
+  // 同时会因玄冥教这一共同对手出现阶段性的同向行动。玩家只介入外围情报与局部冲突。
+  // ---------------------------------------------------------------------------
+  {
+    id: 's1_tongwenguan_formal_arrival', season: 1, category: 'main', location: 'tongwenguan',
+    title: '晋地来人', desc: '幻音坊刚改变对李星云的判断，晋地的通文馆也立刻加快动作。张子凡背后的那层身份，开始变成真正的势力压力。',
+    conditions: [{ type: 'flagTrue', key: 's1_stage_d_complete' }, { type: 'locationUnlocked', location: 'tongwenguan' }, { type: 'chapterIs', value: 's1_tongwenguan' }, { type: 'eventNotCompleted', event: 's1_tongwenguan_formal_arrival' }],
+    action: { type: 'instant' }, rewards: { exp: 22, reputation: 5 },
+    effects: [{ type: 'setQuest', value: '查清通文馆的真正目标' }],
+    log: '你在晋地外围确认：通文馆调动人手并不是为了普通江湖争执。张子凡与李星云一行的关系，正在被李嗣源转化成一条势力线。'
+  },
+  {
+    id: 's1_tongwenguan_formal_horse_station', season: 1, category: 'side', location: 'tongwenguan',
+    title: '馆外换马', desc: '通文馆人马频繁换马传信，附近驿户被临时征用。帮他们把被玄冥教惊散的马匹找回来，也能听见一些外围消息。', retryOnFail: true,
+    conditions: [{ type: 'eventCompleted', event: 's1_tongwenguan_formal_arrival' }, { type: 'eventNotCompleted', event: 's1_tongwenguan_formal_horse_station' }],
+    action: { type: 'battle', enemies: ['scout'] }, rewards: { silver: 35, exp: 18, cultivation: 5, reputation: 7 },
+    effects: [],
+    log: '你替驿户赶走了借乱搜查的玄冥教探子，也从换马频率看出：通文馆正在把消息与人手持续往李星云一行的方向送。',
+    failureLog: '玄冥教探子仍在附近游荡，你先让驿户撤到安全处，稍后还可以再来处理。'
+  },
+  {
+    id: 's1_tongwenguan_formal_road_intercept', season: 1, category: 'encounter', location: 'tongwenguan',
+    title: '驿道截路', desc: '一支通文馆外围传信队伍被玄冥教人手堵在驿道。双方都在争同一条消息，你可以只处理眼前这场截杀。', retryOnFail: true,
+    conditions: [{ type: 'eventCompleted', event: 's1_tongwenguan_formal_arrival' }, { type: 'eventNotCompleted', event: 's1_tongwenguan_formal_road_intercept' }],
+    action: { type: 'battle', enemies: ['scout', 'guard'] }, rewards: { silver: 45, exp: 30, cultivation: 8, reputation: 8 },
+    effects: [{ type: 'setFlag', key: 'saw_tongwenguan_xuanming_clash', value: true }],
+    log: '你击退截路的玄冥教人手，没有替通文馆送信，却亲眼看见两股势力已经在李星云相关情报线上正面碰撞。',
+    failureLog: '驿道上的玄冥教人手压得太紧，你退开战圈。通文馆传信队伍自行突围，这条遭遇仍可重试。'
+  },
+  {
+    id: 's1_tongwenguan_formal_hidden_three_routes', season: 1, category: 'hidden', location: 'tongwenguan',
+    title: '三路传信', desc: '你曾追过玄冥教的暗号，也看过幻音坊在岐地的布置。如今第三套路标出现在晋地，同一件事正被三方同时追逐。',
+    conditions: [{ type: 'eventCompleted', event: 's1_tongwenguan_formal_arrival' }, { type: 'flagTrue', key: 'connected_xuanming_clue_to_huanyinfang' }, { type: 'flagTrue', key: 'huanyinfang_strategy_shifted' }, { type: 'eventNotCompleted', event: 's1_tongwenguan_formal_hidden_three_routes' }],
+    action: { type: 'instant' }, rewards: { exp: 14, cultivation: 6 },
+    effects: [{ type: 'setFlag', key: 'recognized_three_faction_convergence', value: true }],
+    log: '玄冥教、幻音坊、通文馆三条传信路线第一次在你的视野里交叉。你还不知道各自底牌，但已经确定他们追逐的是同一个政治核心。'
+  },
+  {
+    id: 's1_tongwenguan_formal_lisiyuan_order', season: 1, category: 'main', location: 'tongwenguan',
+    title: '馆主之令', desc: '晋地传出的命令越来越明确：通文馆要的不是一次普通见面，而是把李星云带回自己的势力范围。',
+    conditions: [{ type: 'eventCompleted', event: 's1_tongwenguan_formal_arrival' }, { type: 'eventCompleted', event: 's1_tongwenguan_formal_road_intercept' }, { type: 'reputationGte', value: 190 }, { type: 'eventNotCompleted', event: 's1_tongwenguan_formal_lisiyuan_order' }],
+    action: { type: 'instant' }, rewards: { exp: 30, reputation: 5 },
+    effects: [{ type: 'setFlag', key: 'learned_lisiyuan_wants_lixingyun', value: true }, { type: 'setQuest', value: '看清岐晋两家的盘算' }],
+    log: '你确认李嗣源已经把李星云当成必须争取的政治人物，而不只是张子凡在江湖上结识的朋友。张子凡的原作身份没有改变，真正增加的是来自义父与通文馆的压力。'
+  },
+  {
+    id: 's1_tongwenguan_formal_qijin_helped', season: 1, category: 'side', location: 'tongwenguan',
+    title: '岐晋同路', desc: '你此前帮过幻音坊。如今一名岐地外围联系人提醒你：岐国与通文馆仍在争人，但面对玄冥教时，双方暂时不打算先互相拆台。',
+    conditions: [{ type: 'eventCompleted', event: 's1_tongwenguan_formal_lisiyuan_order' }, { type: 'flagTrue', key: 'helped_huanyinfang' }, { type: 'eventNotCompleted', event: 's1_tongwenguan_formal_qijin_helped' }],
+    action: { type: 'instant' }, rewards: { exp: 10, reputation: 3 },
+    effects: [{ type: 'setFlag', key: 'understood_qijin_temporary_alignment', value: true }],
+    log: '你看清了岐晋两家的微妙关系：争夺李星云时各有算盘，玄冥教压上来时又会暂时朝同一方向用力。'
+  },
+  {
+    id: 's1_tongwenguan_formal_qijin_distance', season: 1, category: 'side', location: 'tongwenguan',
+    title: '两边都在问', desc: '你此前没有替幻音坊办事。进入晋地后，你仍发现岐国与通文馆分别在问同一个人的去向，偶尔还刻意避开彼此的行动线。',
+    conditions: [{ type: 'eventCompleted', event: 's1_tongwenguan_formal_lisiyuan_order' }, { type: 'flagFalse', key: 'helped_huanyinfang' }, { type: 'eventNotCompleted', event: 's1_tongwenguan_formal_qijin_distance' }],
+    action: { type: 'instant' }, rewards: { exp: 8, reputation: 2 },
+    effects: [{ type: 'setFlag', key: 'understood_qijin_temporary_alignment', value: true }],
+    log: '即使你没有岐地人情，也能从两边的行动看出：通文馆与岐国既竞争，又不会在玄冥教面前无条件互相消耗。'
+  },
+  {
+    id: 's1_tongwenguan_formal_focus_shifts', season: 1, category: 'main', location: 'tongwenguan',
+    title: '争的已经不是一把剑', desc: '玄冥教要追，岐国想拉拢，通文馆也要把人带回去。各方真正盯上的，已经是龙泉剑、李唐血脉与李星云本人绑在一起的政治价值。',
+    conditions: [{ type: 'eventCompleted', event: 's1_tongwenguan_formal_lisiyuan_order' }, { type: 'flagTrue', key: 'understood_qijin_temporary_alignment' }, { type: 'reputationGte', value: 200 }, { type: 'flagFalse', key: 's1_stage_e_complete' }, { type: 'eventNotCompleted', event: 's1_tongwenguan_formal_focus_shifts' }],
+    action: { type: 'instant' }, rewards: { exp: 35, cultivation: 8, reputation: 8 },
+    effects: [{ type: 'setFlag', key: 'dragon_spring_attention_converged', value: true }, { type: 'setFlag', key: 's1_stage_e_complete', value: true }, { type: 'setQuest', value: '龙泉线索浮出水面' }, { type: 'setChapter', value: 's1_longquan' }],
+    log: '你终于把几条线拼到一起：各方争夺的核心已经从“谁拿到一把剑”变成“谁能利用龙泉与李唐身份背后的政治意义”。江湖注意力开始全面转向龙泉线索，通文馆篇至此收束。'
   }
 ];
 
