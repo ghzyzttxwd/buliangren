@@ -179,6 +179,36 @@ function repairStageDProgress(state) {
   }
 }
 
+function appendStageDDiagnostic(state) {
+  const completed = state.events?.completed || [];
+  const flags = state.world?.flags || {};
+  const nvdi = state.relationships?.nvdi || {};
+  const personal = nvdi.personalFlags || {};
+  const yesNo = value => value === true ? '1' : '0';
+  const has = id => completed.includes(id) ? '1' : '0';
+  const line = [
+    '[D诊断]',
+    `met=${yesNo(flags.met_nvdi_formally)}`,
+    `help=${yesNo(flags.helped_huanyinfang)}`,
+    `decided=${yesNo(flags.huanyinfang_contact_decided)}`,
+    `stage=${yesNo(flags.s1_stage_d_complete)}`,
+    `relMet=${yesNo(nvdi.met)}`,
+    `aff=${Number.isFinite(nvdi.affinity) ? nvdi.affinity : 'NA'}`,
+    `pHelp=${yesNo(personal.heard_players_xuanming_judgment)}`,
+    `pDist=${yesNo(personal.accepted_mutual_distance)}`,
+    `eFollowH=${has('s1_huanyinfang_formal_nvdi_followup_helped')}`,
+    `eFollowD=${has('s1_huanyinfang_formal_nvdi_followup_distance')}`,
+    `eFinalH=${has('s1_huanyinfang_formal_strategy_shift')}`,
+    `eFinalD=${has('s1_huanyinfang_formal_strategy_shift_distance')}`,
+    `rep=${state.world?.reputation}`,
+    `chapter=${state.world?.chapter}`,
+    `quest=${state.world?.quest}`
+  ].join(' ');
+  state.logs = (state.logs || []).filter(entry => !entry.startsWith('[D诊断]'));
+  state.logs.unshift(line);
+  state.logs = state.logs.slice(0, 30);
+}
+
 function normalizeV2(raw) {
   const defaults = defaultState();
   const source = isPlainObject(raw) ? raw : {};
@@ -234,6 +264,7 @@ function normalizeV2(raw) {
   if (state.world.flags.chapter1Done) unlock(state, 'qiguo');
 
   repairStageDProgress(state);
+  appendStageDDiagnostic(state);
   return state;
 }
 
