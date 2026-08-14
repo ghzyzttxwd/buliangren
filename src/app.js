@@ -25,6 +25,7 @@ function persist(){ state = saveState(state); }
 function showToast(msg){ clearTimeout(toastTimer); const old=document.querySelector('.toast'); old?.remove(); const el=document.createElement('div'); el.className='toast'; el.textContent=msg; document.body.appendChild(el); toastTimer=setTimeout(()=>el.remove(),1900); }
 function relationLabel(value=0){ if(value>=70)return '亲近'; if(value>=45)return '信任'; if(value>=20)return '熟悉'; if(value>=0)return '初识'; if(value>=-40)return '冷淡'; return '敌视'; }
 function categoryLabel(category){ return ({main:'主线',side:'支线',hidden:'奇遇',character:'人物',encounter:'江湖'})[category] || '事件'; }
+function learnedPlayerSkills(){ return Object.entries(state.martialArts||{}).filter(([id,art])=>art?.learned===true&&SKILLS[id]?.playerLearnable===true).map(([id])=>id); }
 
 function currentObjectiveEvent(){
   const available = LOCATIONS
@@ -81,7 +82,7 @@ function partyView(){
 }
 
 function skillsView(){
-  const owned=new Set(state.party.flatMap(id=>CHARACTERS[id].skills));
+  const owned=new Set([...state.party.flatMap(id=>CHARACTERS[id].skills), ...learnedPlayerSkills()]);
   return `<main class="page"><div class="section-title"><h3>已掌握武学</h3><span>${owned.size} 门</span></div><section class="skill-list">${[...owned].map(id=>{const s=SKILLS[id];const mastery=state.martialArts[id]?.mastery||1;return `<article class="skill-card"><div class="skill-head"><span class="skill-name">${s.name}</span><span class="skill-type">${s.type}</span></div><p>${s.desc}</p><div class="skill-meta"><span>熟练 Lv.${mastery}</span><span>${s.heal?'治疗型':`威力 ${Math.round((s.power||1)*100)}%`}</span></div></article>`}).join('')}</section></main>`;
 }
 
@@ -119,7 +120,7 @@ function startEvent(eventId){
   const event=started.event;
   if(!started.ok || !event){ showToast('当前条件不满足'); return; }
   if(event.action?.type==='battle'){
-    battle=createBattle(event.action.enemies||[],state.party);
+    battle=createBattle(event.action.enemies||[],state.party,state.martialArts);
     battle.eventId=event.id;
     modal=null;
     persist();
