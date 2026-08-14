@@ -131,7 +131,7 @@ export const EVENTS = [
     rewards: { silver: 30, reputation: 5 },
     effects: [
       { type: 'setFlag', key: 'cangbingVisited', value: true },
-      { type: 'setChapter', value: 's1_xuanming' }
+      { type: 'setChapter', value: 's1_yuzhou' }
     ],
     log: '你在藏兵谷石壁发现不良人暗记。蚩梦认出其中藏着一个“岐”字。'
   },
@@ -145,14 +145,130 @@ export const EVENTS = [
     retryOnFail: true,
     conditions: [
       { type: 'locationUnlocked', location: 'cangbing' },
+      { type: 'flagTrue', key: 'cangbingVisited' },
       { type: 'flagFalse', key: 'cangbingGuardDefeated' }
     ],
     action: { type: 'battle', enemies: ['guard'] },
     rewards: { silver: 90, exp: 55, cultivation: 15, reputation: 15 },
-    effects: [{ type: 'setFlag', key: 'cangbingGuardDefeated', value: true }],
-    log: '你击退藏兵谷口的玄冥教力士。',
+    effects: [
+      { type: 'setFlag', key: 'cangbingGuardDefeated', value: true },
+      { type: 'unlockLocation', id: 'xuanming' },
+      { type: 'setQuest', value: '玄冥暗流' },
+      { type: 'setChapter', value: 's1_xuanming' }
+    ],
+    log: '你击退藏兵谷口的玄冥教力士，顺着留下的线索摸到了玄冥教势力活动的方向。',
     failureLog: '玄冥教力士守势沉重，你暂时退回谷外。'
   },
+
+  // 第一季骨架：以下节点只验证章节推进、地点解锁与人物关系，不代表正式剧情文本。
+  {
+    id: 's1_xuanming_skeleton',
+    season: 1,
+    category: 'main',
+    location: 'xuanming',
+    title: '玄冥暗流',
+    desc: '你沿着藏兵谷留下的线索，确认玄冥教正在追逐一条足以惊动多方势力的消息。',
+    conditions: [
+      { type: 'flagTrue', key: 'cangbingGuardDefeated' },
+      { type: 'eventNotCompleted', event: 's1_xuanming_skeleton' }
+    ],
+    action: { type: 'instant' },
+    rewards: { exp: 20, reputation: 10 },
+    effects: [
+      { type: 'unlockLocation', id: 'qiguo' },
+      { type: 'unlockLocation', id: 'huanyinfang' },
+      { type: 'setFlag', key: 's1_xuanming_node_done', value: true },
+      { type: 'setQuest', value: '岐地来人' },
+      { type: 'setChapter', value: 's1_huanyinfang' }
+    ],
+    log: '玄冥教的动作惊动了岐地势力。第一季骨架推进至【幻音坊】节点。'
+  },
+  {
+    id: 's1_huanyinfang_skeleton',
+    season: 1,
+    category: 'main',
+    location: 'huanyinfang',
+    title: '岐地来人',
+    desc: '幻音坊开始介入这场争夺。你第一次真正进入女帝所在势力的视线。',
+    conditions: [
+      { type: 'eventCompleted', event: 's1_xuanming_skeleton' },
+      { type: 'eventNotCompleted', event: 's1_huanyinfang_skeleton' }
+    ],
+    action: { type: 'instant' },
+    rewards: { exp: 20, reputation: 10 },
+    effects: [
+      { type: 'setCharacterMet', character: 'nvdi', value: true },
+      { type: 'unlockLocation', id: 'tongwenguan' },
+      { type: 'setFlag', key: 's1_huanyinfang_node_done', value: true },
+      { type: 'setQuest', value: '晋地风声' },
+      { type: 'setChapter', value: 's1_tongwenguan' }
+    ],
+    log: '你与幻音坊势力正式产生交集，女帝人物关系已进入“相识”状态。第一季骨架推进至【通文馆】节点。'
+  },
+  {
+    id: 's1_tongwenguan_skeleton',
+    season: 1,
+    category: 'main',
+    location: 'tongwenguan',
+    title: '晋地风声',
+    desc: '通文馆也卷入局中，多方线索开始共同指向龙泉相关秘密。',
+    conditions: [
+      { type: 'eventCompleted', event: 's1_huanyinfang_skeleton' },
+      { type: 'eventNotCompleted', event: 's1_tongwenguan_skeleton' }
+    ],
+    action: { type: 'instant' },
+    rewards: { exp: 25, cultivation: 10, reputation: 10 },
+    effects: [
+      { type: 'unlockLocation', id: 'longquan' },
+      { type: 'setFlag', key: 's1_tongwenguan_node_done', value: true },
+      { type: 'setQuest', value: '龙泉线索' },
+      { type: 'setChapter', value: 's1_longquan' }
+    ],
+    log: '通文馆的情报与此前线索互相印证，龙泉相关秘密浮出水面。第一季骨架推进至【龙泉】节点。'
+  },
+  {
+    id: 's1_longquan_skeleton',
+    season: 1,
+    category: 'main',
+    location: 'longquan',
+    title: '龙泉线索',
+    desc: '几股势力的线索终于在此交汇。正式剧情将在内容填充阶段补足人物冲突与细节。',
+    conditions: [
+      { type: 'eventCompleted', event: 's1_tongwenguan_skeleton' },
+      { type: 'eventNotCompleted', event: 's1_longquan_skeleton' }
+    ],
+    action: { type: 'instant' },
+    rewards: { exp: 30, cultivation: 10, reputation: 15 },
+    effects: [
+      { type: 'setFlag', key: 's1_longquan_node_done', value: true },
+      { type: 'setFlag', key: 's1_finale_ready', value: true },
+      { type: 'setQuest', value: '第一季终局' },
+      { type: 'setChapter', value: 's1_finale' }
+    ],
+    log: '龙泉线索完成汇合，第一季终局节点已经开启。'
+  },
+  {
+    id: 's1_finale_skeleton',
+    season: 1,
+    category: 'main',
+    location: 'longquan',
+    title: '第一季终局·骨架验收',
+    desc: '这是第一季终局的结构占位节点，只用于验证整季主线可以从序章一路跑通。',
+    conditions: [
+      { type: 'flagTrue', key: 's1_finale_ready' },
+      { type: 'eventNotCompleted', event: 's1_finale_skeleton' }
+    ],
+    action: { type: 'instant' },
+    rewards: { exp: 40, cultivation: 20, reputation: 20 },
+    effects: [
+      { type: 'setFlag', key: 'season1SkeletonComplete', value: true },
+      { type: 'setFlag', key: 'chapter1Done', value: true },
+      { type: 'setQuest', value: '第一季骨架完成' },
+      { type: 'setChapter', value: 's1_finale' }
+    ],
+    log: '第一季主线骨架已完整跑通。后续进入正式内容填充时，再替换各节点的占位剧情。'
+  },
+
   {
     id: 's1_hidden_stranger',
     season: 1,
