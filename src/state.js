@@ -144,6 +144,41 @@ function unlock(state, id) {
   if (!state.world.unlockedLocations.includes(id)) state.world.unlockedLocations.push(id);
 }
 
+function repairStageDProgress(state) {
+  const completed = state.events.completed;
+  const flags = state.world.flags;
+  const nvdiFlags = state.relationships?.nvdi?.personalFlags || {};
+  const helpedFollowup = 's1_huanyinfang_formal_nvdi_followup_helped';
+  const distanceFollowup = 's1_huanyinfang_formal_nvdi_followup_distance';
+  const helpedFinale = 's1_huanyinfang_formal_strategy_shift';
+  const distanceFinale = 's1_huanyinfang_formal_strategy_shift_distance';
+
+  if (nvdiFlags.heard_players_xuanming_judgment === true && !completed.includes(helpedFollowup)) {
+    completed.push(helpedFollowup);
+  }
+  if (nvdiFlags.accepted_mutual_distance === true && !completed.includes(distanceFollowup)) {
+    completed.push(distanceFollowup);
+  }
+
+  const finaleDone = completed.includes(helpedFinale) || completed.includes(distanceFinale);
+  const followupDone = completed.includes(helpedFollowup) || completed.includes(distanceFollowup);
+
+  if (finaleDone) {
+    flags.s1_stage_d_complete = true;
+    flags.huanyinfang_strategy_shifted = true;
+    unlock(state, 'tongwenguan');
+    return;
+  }
+
+  // v0.3.2/v0.3.3 旧存档可能已经完成女帝后续事件，却留下错误的阶段完成标记。
+  // 只有在没有任何“夺剑之外”完成记录时才回正，避免覆盖正常通关存档。
+  if (followupDone) {
+    flags.s1_stage_d_complete = false;
+    state.world.chapter = 's1_huanyinfang';
+    state.world.quest = '夺剑之外';
+  }
+}
+
 function normalizeV2(raw) {
   const defaults = defaultState();
   const source = isPlainObject(raw) ? raw : {};
@@ -198,6 +233,7 @@ function normalizeV2(raw) {
   if (state.world.flags.s1_tongwenguan_node_done) unlock(state, 'longquan');
   if (state.world.flags.chapter1Done) unlock(state, 'qiguo');
 
+  repairStageDProgress(state);
   return state;
 }
 
