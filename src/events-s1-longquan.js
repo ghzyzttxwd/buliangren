@@ -45,7 +45,7 @@ const STAGE_F_EVENTS = [
   {
     id: 's1_longquan_formal_identity_binding', season: 1, category: 'main', location: 'qiguo',
     title: '剑已经和人绑在一起', desc: '龙泉剑、李唐血脉、李星云本人，正在被各方势力当成同一件事来谈。江湖争夺已经彻底政治化。',
-    conditions: [{ type: 'eventCompleted', event: 's1_longquan_formal_cangbing_news' }, { type: 'reputationGte', value: 235 }, { type: 'eventNotCompleted', event: 's1_longquan_formal_identity_binding' }],
+    conditions: [{ type: 'eventCompleted', event: 's1_longquan_formal_cangbing_news' }, { type: 'reputationGte', value: 225 }, { type: 'eventNotCompleted', event: 's1_longquan_formal_identity_binding' }],
     action: { type: 'instant' }, rewards: { exp: 32, cultivation: 8, reputation: 8 },
     effects: [{ type: 'setFlag', key: 'dragon_spring_identity_bound', value: true }, { type: 'setQuest', value: '观察各方下一步动作' }],
     log: '你终于看清龙泉线索在第一季真正的变化：剑还是那把剑，但它已经和李星云的血脉、名分与诸侯野心绑在一起。谁都不只是为了拿走一件兵器。'
@@ -62,7 +62,7 @@ const STAGE_F_EVENTS = [
   {
     id: 's1_longquan_formal_factions_move', season: 1, category: 'main', location: 'tongwenguan',
     title: '各方都开始动了', desc: '玄冥教、岐国、通文馆以及不良人相关力量都已围绕李星云与龙泉重新部署。局部争夺即将升级成公开的多方角力。',
-    conditions: [{ type: 'eventCompleted', event: 's1_longquan_formal_identity_binding' }, { type: 'reputationGte', value: 250 }, { type: 'flagFalse', key: 's1_stage_f_complete' }, { type: 'eventNotCompleted', event: 's1_longquan_formal_factions_move' }],
+    conditions: [{ type: 'eventCompleted', event: 's1_longquan_formal_identity_binding' }, { type: 'reputationGte', value: 235 }, { type: 'flagFalse', key: 's1_stage_f_complete' }, { type: 'eventNotCompleted', event: 's1_longquan_formal_factions_move' }],
     action: { type: 'instant' }, rewards: { exp: 36, cultivation: 10, reputation: 8 },
     effects: [{ type: 'setFlag', key: 's1_stage_f_complete', value: true }, { type: 'setFlag', key: 'multi_faction_conflict_ready', value: true }, { type: 'setQuest', value: '多方势力争夺' }],
     log: '龙泉线索没有把你带到某个已经开启的秘地，反而把整个第一季的几条势力线拧到了一起。各方开始公开调动人手，多方势力争夺已经具备爆发条件。龙泉线索篇至此收束。'
