@@ -27,6 +27,20 @@ function relationLabel(value=0){ if(value>=70)return '亲近'; if(value>=45)retu
 function categoryLabel(category){ return ({main:'主线',side:'支线',hidden:'奇遇',character:'人物',encounter:'江湖'})[category] || '事件'; }
 function learnedPlayerSkills(){ return Object.entries(state.martialArts||{}).filter(([id,art])=>art?.learned===true&&SKILLS[id]?.playerLearnable===true).map(([id])=>id); }
 
+function chapterMeta(){
+  const table={
+    s1_prologue:{eyebrow:'第一季 · 序章',title:'风起渝州',progress:8},
+    s1_yuzhou:{eyebrow:'第一季 · 渝州篇',title:'渝州暗潮',progress:18},
+    s1_xuanming:{eyebrow:'第一季 · 玄冥教篇',title:'玄冥暗流',progress:32},
+    s1_huanyinfang:{eyebrow:'第一季 · 幻音坊篇',title:'岐地风云',progress:46},
+    s1_tongwenguan:{eyebrow:'第一季 · 通文馆篇',title:'晋地来人',progress:60},
+    s1_longquan:{eyebrow:'第一季 · 龙泉线索篇',title:'龙泉风声',progress:76},
+    s1_finale:{eyebrow:'第一季 · 终局',title:'洛阳风急',progress:90},
+    s1_complete:{eyebrow:'第一季 · 完成',title:'江湖未止',progress:100}
+  };
+  return table[state.world.chapter] || {eyebrow:'第一季 · 江湖行',title:'江湖风声',progress:12};
+}
+
 function currentObjectiveEvent(){
   const available = LOCATIONS
     .filter(loc => loc.unlock(state))
@@ -48,17 +62,23 @@ function nav(){
 
 function worldView(){
   const objective = currentObjectiveEvent();
-  const completedCount = state.events?.completed?.filter(id=>id.startsWith('s1_')).length || 0;
-  const progress = Math.min(88, 18 + completedCount * 8);
+  const meta = chapterMeta();
+  const seasonComplete = state.world.flags?.season1Complete === true;
   const breakthrough = getBreakthroughInfo(state);
   const nextRealm = breakthrough.next;
   const expNeed = expRequiredForNextLevel(state.player.level);
   const targetLocation = objective ? LOCATIONS.find(loc=>loc.id===objective.location) : null;
   const objectiveCard = objective
     ? `<section class="quest-card"><span class="tag">${categoryLabel(objective.category)}</span><h4>${objective.title}</h4><p>${objective.desc}</p><button class="primary full" data-quest="${objective.location}">前往${targetLocation?.name || '事发地点'}</button></section>`
-    : `<section class="quest-card"><span class="tag">自由活动</span><h4>暂无强制目标</h4><p>当前主线条件尚未满足，或本阶段正式内容已经完成。可继续练功、处理支线与奇遇，江湖声望和经历会让新的线索出现。</p></section>`;
+    : seasonComplete
+      ? `<section class="quest-card"><span class="tag">第一季完成</span><h4>江湖未止</h4><p>第一季主线已经结束。你仍可处理尚未完成的支线、奇遇、人物事件与武学成长；第二季正式内容尚未开始。</p></section>`
+      : `<section class="quest-card"><span class="tag">自由活动</span><h4>暂无强制目标</h4><p>当前主线条件尚未满足，或本阶段正式内容已经完成。可继续练功、处理支线与奇遇，江湖声望和经历会让新的线索出现。</p></section>`;
+  const heroTitle = objective ? objective.title : seasonComplete ? '第一季终 · 江湖未止' : meta.title;
+  const heroDesc = objective ? objective.desc : seasonComplete
+    ? '焦兰殿风波已经落幕，李星云仍选择浪迹江湖。你的第一季经历已经写入江湖记录。'
+    : '眼下没有必须立刻处理的主线。继续在江湖活动，新的线索会在条件成熟后出现。';
   return `<main class="page">
-    <section class="hero-banner"><div class="eyebrow">第一季 · 序章 · 风起渝州</div><h2>${objective ? objective.title : '江湖风声未定'}</h2><p>${objective ? objective.desc : '眼下没有必须立刻处理的主线。继续在江湖活动，新的线索会在条件成熟后出现。'}</p><div class="progress-line"><span style="width:${progress}%"></span></div></section>
+    <section class="hero-banner"><div class="eyebrow">${meta.eyebrow}</div><h2>${heroTitle}</h2><p>${heroDesc}</p><div class="progress-line"><span style="width:${meta.progress}%"></span></div></section>
 
     <div class="section-title"><h3>江湖身份</h3><span>${getReputationRank(state.world.reputation)}</span></div>
     <section class="quest-card"><span class="tag">成长</span><h4>${getRealmName(state.player.realm)} · 修为 ${state.player.cultivation}${nextRealm?` / ${nextRealm.cultivationRequired}`:''}</h4><p>阅历 ${state.player.exp} / ${expNeed}。${nextRealm?`下一境：${nextRealm.name}${breakthrough.canBreakthrough?'，当前可以突破。':`，还差 ${breakthrough.remaining} 修为。`}`:'已至当前版本最高境界。'}</p>${breakthrough.canBreakthrough?'<button class="primary full" data-breakthrough>尝试突破</button>':''}</section>
@@ -86,7 +106,7 @@ function skillsView(){
   return `<main class="page"><div class="section-title"><h3>已掌握武学</h3><span>${owned.size} 门</span></div><section class="skill-list">${[...owned].map(id=>{const s=SKILLS[id];const mastery=state.martialArts[id]?.mastery||1;return `<article class="skill-card"><div class="skill-head"><span class="skill-name">${s.name}</span><span class="skill-type">${s.type}</span></div><p>${s.desc}</p><div class="skill-meta"><span>熟练 Lv.${mastery}</span><span>${s.heal?'治疗型':`威力 ${Math.round((s.power||1)*100)}%`}</span></div></article>`}).join('')}</section></main>`;
 }
 
-function bagView(){ return `<main class="page"><div class="section-title"><h3>行囊</h3><span>v0.2 数据迁移中</span></div><section class="inventory-list">${ITEMS.map(i=>`<article class="item-card"><div class="skill-head"><b>${i.name}</b><span class="skill-type">×${i.count}</span></div><p>${i.desc}</p></article>`).join('')}</section></main>`; }
+function bagView(){ return `<main class="page"><div class="section-title"><h3>行囊</h3><span>基础行囊</span></div><section class="inventory-list">${ITEMS.map(i=>`<article class="item-card"><div class="skill-head"><b>${i.name}</b><span class="skill-type">×${i.count}</span></div><p>${i.desc}</p></article>`).join('')}</section></main>`; }
 
 function logsView(){ return `<main class="page"><div class="section-title"><h3>江湖记录</h3><span>自动存档</span></div><section class="log-list">${state.logs.map((x,i)=>`<article class="log-card"><b>${i===0?'最近':'记录'}</b><p>${esc(x)}</p></article>`).join('')}</section><section class="settings"><button class="danger full" data-reset>重置本地存档</button><div class="version">不良人：江湖行 · v${GAME_VERSION} · 存档结构 v${SAVE_VERSION}</div></section></main>`; }
 
