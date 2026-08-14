@@ -35,7 +35,8 @@ export const SKILLS = {
 export const ENEMIES = {
   scout: { id:'scout', name:'玄冥教探子', maxHp:88, attack:16, defense:5, speed:9 },
   guard: { id:'guard', name:'玄冥教力士', maxHp:125, attack:20, defense:8, speed:7 },
-  blackwuchang: { id:'blackwuchang', name:'黑无常', maxHp:240, attack:29, defense:12, speed:15 }
+  blackwuchang: { id:'blackwuchang', name:'黑无常', maxHp:240, attack:29, defense:12, speed:15 },
+  palace_guard: { id:'palace_guard', name:'焦兰殿禁卫', maxHp:155, attack:23, defense:10, speed:10 }
 };
 
 const unlocked = (state, id) => state?.world?.unlockedLocations?.includes(id);
@@ -50,7 +51,8 @@ export const LOCATIONS = [
   { id:'taiyuan', name:'太原', icon:'太', desc:'晋地重镇，群雄势力交错。', unlock:(s)=>unlocked(s,'taiyuan') },
   { id:'raojiang', name:'娆疆', icon:'娆', desc:'万毒窟、蛊术与十万大山。', unlock:(s)=>unlocked(s,'raojiang') },
   { id:'mobei', name:'漠北', icon:'漠', desc:'北地风沙漫天，强敌与异族势力盘踞。', unlock:(s)=>unlocked(s,'mobei') },
-  { id:'longquan', name:'龙泉秘地', icon:'龙', desc:'只在满足特殊条件后才会显露的秘密地点。', unlock:(s)=>unlocked(s,'longquan') }
+  { id:'longquan', name:'龙泉秘地', icon:'龙', desc:'只在满足特殊条件后才会显露的秘密地点。', unlock:(s)=>unlocked(s,'longquan') },
+  { id:'luoyang', name:'洛阳', icon:'洛', desc:'大梁东都。第一季终局将指向焦兰殿。', unlock:(s)=>unlocked(s,'luoyang') }
 ];
 
 export const ITEMS = [
