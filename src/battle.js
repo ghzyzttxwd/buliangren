@@ -4,8 +4,19 @@ const clone = (x) => JSON.parse(JSON.stringify(x));
 const alive = (x) => x.hp > 0;
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
-export function createBattle(enemyIds, partyIds) {
-  const allies = partyIds.map(id => ({ ...clone(CHARACTERS[id]), hp: CHARACTERS[id].maxHp, side:'ally' }));
+function learnedPlayerSkills(martialArts = {}) {
+  return Object.entries(martialArts)
+    .filter(([id, art]) => art?.learned === true && SKILLS[id]?.playerLearnable === true)
+    .map(([id]) => id);
+}
+
+export function createBattle(enemyIds, partyIds, martialArts = {}) {
+  const learned = learnedPlayerSkills(martialArts);
+  const allies = partyIds.map(id => {
+    const base = clone(CHARACTERS[id]);
+    if (id === 'player') base.skills = [...new Set([...(base.skills || []), ...learned])];
+    return { ...base, hp: base.maxHp, side:'ally' };
+  });
   const enemies = enemyIds.map((id,i) => ({ ...clone(ENEMIES[id]), uid:`${id}_${i}`, hp:ENEMIES[id].maxHp, side:'enemy' }));
   return { allies, enemies, allyIndex:0, round:1, log:['战斗开始。'], status:'active' };
 }
