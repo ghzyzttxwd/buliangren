@@ -8,7 +8,7 @@ import {
   getReputationRank,
   expRequiredForNextLevel
 } from './progression.js';
-import { getAvailableEvents, getEvent, completeEvent } from './events.js';
+import { getAvailableEvents, getEvent, beginEvent, completeEvent, failEvent } from './events.js';
 import { GAME_VERSION, SAVE_VERSION } from './version.js';
 
 let state = loadState();
@@ -26,6 +26,17 @@ function showToast(msg){ clearTimeout(toastTimer); const old=document.querySelec
 function relationLabel(value=0){ if(value>=70)return '亲近'; if(value>=45)return '信任'; if(value>=20)return '熟悉'; if(value>=0)return '初识'; if(value>=-40)return '冷淡'; return '敌视'; }
 function categoryLabel(category){ return ({main:'主线',side:'支线',hidden:'奇遇',character:'人物',encounter:'江湖'})[category] || '事件'; }
 
+function currentObjectiveEvent(){
+  const available = LOCATIONS
+    .filter(loc => loc.unlock(state))
+    .flatMap(loc => getAvailableEvents(state, loc.id))
+    .filter(event => event.category === 'main' || (event.category === 'encounter' && !event.repeatable));
+  return available.sort((a,b)=>{
+    const rank = event => event.category === 'main' ? 0 : 1;
+    return rank(a) - rank(b);
+  })[0] || null;
+}
+
 function header(){ return `
 <header class="topbar"><div class="brand-row"><div class="brand"><div class="brand-mark"><span>良</span></div><div><h1>不良人：江湖行</h1><small>江湖 RPG · v${GAME_VERSION}</small></div></div><div class="resources"><div class="resource">Lv.<b>${state.player.level}</b></div><div class="resource">境<b>${getRealmName(state.player.realm)}</b></div><div class="resource">声<b>${state.world.reputation}</b></div><div class="resource">银<b>${state.player.silver}</b></div></div></div></header>`; }
 
@@ -35,18 +46,24 @@ function nav(){
 }
 
 function worldView(){
-  const progress = state.world.flags.scoutDefeated ? 48 : 12;
+  const objective = currentObjectiveEvent();
+  const completedCount = state.events?.completed?.filter(id=>id.startsWith('s1_')).length || 0;
+  const progress = Math.min(88, 18 + completedCount * 8);
   const breakthrough = getBreakthroughInfo(state);
   const nextRealm = breakthrough.next;
   const expNeed = expRequiredForNextLevel(state.player.level);
+  const targetLocation = objective ? LOCATIONS.find(loc=>loc.id===objective.location) : null;
+  const objectiveCard = objective
+    ? `<section class="quest-card"><span class="tag">${categoryLabel(objective.category)}</span><h4>${objective.title}</h4><p>${objective.desc}</p><button class="primary full" data-quest="${objective.location}">前往${targetLocation?.name || '事发地点'}</button></section>`
+    : `<section class="quest-card"><span class="tag">阶段完成</span><h4>序章现有事件已处理</h4><p>当前没有新的强制目标。可继续练功、探索支线与奇遇，等待下一阶段内容开放。</p></section>`;
   return `<main class="page">
-    <section class="hero-banner"><div class="eyebrow">第一季 · 序章 · 风起渝州</div><h2>${state.world.flags.scoutDefeated?'驿道血迹指向藏兵谷':'城外有人盯上了你'}</h2><p>${state.world.flags.scoutDefeated?'玄冥教探子留下的暗号将线索引向藏兵谷。江湖里的风，开始变了。':'你刚入渝州便卷入追杀。蚩梦说，那群黑衣人身上有玄冥教的味道。'}</p><div class="progress-line"><span style="width:${progress}%"></span></div></section>
+    <section class="hero-banner"><div class="eyebrow">第一季 · 序章 · 风起渝州</div><h2>${objective ? objective.title : '江湖暂归平静'}</h2><p>${objective ? objective.desc : '现有序章线索已经处理完毕，接下来将由事件系统承接后续剧情。'}</p><div class="progress-line"><span style="width:${progress}%"></span></div></section>
 
     <div class="section-title"><h3>江湖身份</h3><span>${getReputationRank(state.world.reputation)}</span></div>
     <section class="quest-card"><span class="tag">成长</span><h4>${getRealmName(state.player.realm)} · 修为 ${state.player.cultivation}${nextRealm?` / ${nextRealm.cultivationRequired}`:''}</h4><p>阅历 ${state.player.exp} / ${expNeed}。${nextRealm?`下一境：${nextRealm.name}${breakthrough.canBreakthrough?'，当前可以突破。':`，还差 ${breakthrough.remaining} 修为。`}`:'已至当前版本最高境界。'}</p>${breakthrough.canBreakthrough?'<button class="primary full" data-breakthrough>尝试突破</button>':''}</section>
 
     <div class="section-title"><h3>当前任务</h3><span>声望 ${state.world.reputation} · ${getRealmName(state.player.realm)}</span></div>
-    <section class="quest-card"><span class="tag">${state.world.flags.scoutDefeated?'已更新':'进行中'}</span><h4>${state.world.flags.scoutDefeated?'旧谷暗号':'驿道疑云'}</h4><p>${state.world.flags.scoutDefeated?'前往藏兵谷调查石壁上的不良人暗记。':'前往城南驿道，调查玄冥教为何在此出没。'}</p><button class="primary full" data-quest>${state.world.flags.scoutDefeated?'前往藏兵谷':'调查城南驿道'}</button></section>
+    ${objectiveCard}
 
     <div class="section-title"><h3>江湖地点</h3><span>${LOCATIONS.filter(x=>x.unlock(state)).length} / ${LOCATIONS.length} 已解锁</span></div>
     <section class="location-list">${LOCATIONS.map(loc=>{const unlocked=loc.unlock(state);const count=unlocked?getAvailableEvents(state,loc.id).length:0;return `<button class="location" data-location="${loc.id}" ${unlocked?'':'disabled'}><span class="loc-icon">${loc.icon}</span><span class="loc-copy"><b>${loc.name}</b><small>${loc.desc}${unlocked?` · ${count} 个可用事件`:' · 尚未解锁'}</small></span><span class="chev">›</span></button>`}).join('')}</section>
@@ -98,11 +115,14 @@ function render(){
 }
 
 function startEvent(eventId){
-  const event=getEvent(eventId); if(!event)return;
+  const started=beginEvent(state,eventId);
+  const event=started.event;
+  if(!started.ok || !event){ showToast('当前条件不满足'); return; }
   if(event.action?.type==='battle'){
     battle=createBattle(event.action.enemies||[],state.party);
     battle.eventId=event.id;
     modal=null;
+    persist();
     render();
     return;
   }
@@ -126,6 +146,15 @@ function finishBattle(){
   showToast(result.ok?'战果已结算 · 自动存档':'战斗结束');
 }
 
+function leaveBattle(){
+  const eventId=battle?.eventId;
+  if(eventId) failEvent(state,eventId);
+  persist();
+  battle=null;
+  render();
+  showToast('已撤回渝州');
+}
+
 function handleBreakthrough(){
   const result=tryBreakthrough(state);
   if(!result.ok){ showToast('修为尚不足以突破'); return; }
@@ -138,7 +167,7 @@ function handleBreakthrough(){
 function bind(){
   document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>{view=b.dataset.nav; modal=null; render();});
   document.querySelectorAll('[data-location]').forEach(b=>b.onclick=()=>{modal=b.dataset.location; render();});
-  document.querySelector('[data-quest]')?.addEventListener('click',()=>{modal=state.world.flags.scoutDefeated?'cangbing':'yuzhou';render();});
+  document.querySelector('[data-quest]')?.addEventListener('click',e=>{modal=e.currentTarget.dataset.quest;render();});
   document.querySelector('[data-breakthrough]')?.addEventListener('click',handleBreakthrough);
   document.querySelectorAll('[data-event]').forEach(b=>b.onclick=()=>startEvent(b.dataset.event));
   document.querySelectorAll('[data-close]').forEach(x=>x.addEventListener('click',e=>{if(e.target===x){modal=null;render();}}));
@@ -147,7 +176,7 @@ function bind(){
   document.querySelector('[data-action="rest"]')?.addEventListener('click',()=>{modal=null;render();showToast('已休整');});
   document.querySelectorAll('[data-skill]').forEach(b=>b.onclick=()=>{battle=useSkill(battle,b.dataset.skill);render();});
   document.querySelector('[data-battle-finish]')?.addEventListener('click',finishBattle);
-  document.querySelector('[data-battle-leave]')?.addEventListener('click',()=>{battle=null;render();showToast('已撤回渝州');});
+  document.querySelector('[data-battle-leave]')?.addEventListener('click',leaveBattle);
   document.querySelector('[data-reset]')?.addEventListener('click',()=>{if(confirm('确定清空当前本地存档？')){state=resetState();view='world';modal=null;battle=null;render();showToast('存档已重置');}});
 }
 
