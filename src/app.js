@@ -55,9 +55,9 @@ function worldView(){
   const targetLocation = objective ? LOCATIONS.find(loc=>loc.id===objective.location) : null;
   const objectiveCard = objective
     ? `<section class="quest-card"><span class="tag">${categoryLabel(objective.category)}</span><h4>${objective.title}</h4><p>${objective.desc}</p><button class="primary full" data-quest="${objective.location}">前往${targetLocation?.name || '事发地点'}</button></section>`
-    : `<section class="quest-card"><span class="tag">阶段完成</span><h4>序章现有事件已处理</h4><p>当前没有新的强制目标。可继续练功、探索支线与奇遇，等待下一阶段内容开放。</p></section>`;
+    : `<section class="quest-card"><span class="tag">自由活动</span><h4>暂无强制目标</h4><p>当前主线条件尚未满足，或本阶段正式内容已经完成。可继续练功、处理支线与奇遇，江湖声望和经历会让新的线索出现。</p></section>`;
   return `<main class="page">
-    <section class="hero-banner"><div class="eyebrow">第一季 · 序章 · 风起渝州</div><h2>${objective ? objective.title : '江湖暂归平静'}</h2><p>${objective ? objective.desc : '现有序章线索已经处理完毕，接下来将由事件系统承接后续剧情。'}</p><div class="progress-line"><span style="width:${progress}%"></span></div></section>
+    <section class="hero-banner"><div class="eyebrow">第一季 · 序章 · 风起渝州</div><h2>${objective ? objective.title : '江湖风声未定'}</h2><p>${objective ? objective.desc : '眼下没有必须立刻处理的主线。继续在江湖活动，新的线索会在条件成熟后出现。'}</p><div class="progress-line"><span style="width:${progress}%"></span></div></section>
 
     <div class="section-title"><h3>江湖身份</h3><span>${getReputationRank(state.world.reputation)}</span></div>
     <section class="quest-card"><span class="tag">成长</span><h4>${getRealmName(state.player.realm)} · 修为 ${state.player.cultivation}${nextRealm?` / ${nextRealm.cultivationRequired}`:''}</h4><p>阅历 ${state.player.exp} / ${expNeed}。${nextRealm?`下一境：${nextRealm.name}${breakthrough.canBreakthrough?'，当前可以突破。':`，还差 ${breakthrough.remaining} 修为。`}`:'已至当前版本最高境界。'}</p>${breakthrough.canBreakthrough?'<button class="primary full" data-breakthrough>尝试突破</button>':''}</section>
