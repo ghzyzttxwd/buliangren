@@ -1,6 +1,6 @@
 import { CHARACTERS, SKILLS, LOCATIONS, ITEMS } from './data.js';
 import { loadState, saveState, resetState } from './state.js';
-import { createBattle, useSkill, basicAttack, getCurrentActor } from './battle.js';
+import { createBattle, useSkill, basicAttack, getCurrentActor, canUseSkill, getSkillQiCost, BASIC_ATTACK_QI_RECOVERY } from './battle.js';
 import { buildPlayerCombatant } from './combatants.js';
 import {
   getRealmName,
@@ -106,7 +106,7 @@ function partyView(){
 
 function skillsView(){
   const owned=new Set([...state.party.flatMap(id=>CHARACTERS[id].skills), ...learnedPlayerSkills()]);
-  return `<main class="page"><div class="section-title"><h3>已掌握武学</h3><span>${owned.size} 门</span></div><section class="skill-list">${[...owned].map(id=>{const s=SKILLS[id];const mastery=state.martialArts[id]?.mastery||1;return `<article class="skill-card"><div class="skill-head"><span class="skill-name">${s.name}</span><span class="skill-type">${s.type}</span></div><p>${s.desc}</p><div class="skill-meta"><span>熟练 Lv.${mastery}</span><span>${s.heal?'治疗型':`威力 ${Math.round((s.power||1)*100)}%`}</span></div></article>`}).join('')}</section></main>`;
+  return `<main class="page"><div class="section-title"><h3>已掌握武学</h3><span>${owned.size} 门</span></div><section class="skill-list">${[...owned].map(id=>{const s=SKILLS[id];const mastery=state.martialArts[id]?.mastery||1;return `<article class="skill-card"><div class="skill-head"><span class="skill-name">${s.name}</span><span class="skill-type">${s.type}</span></div><p>${s.desc}</p><div class="skill-meta"><span>熟练 Lv.${mastery}</span><span>${s.heal?'治疗型':`威力 ${Math.round((s.power||1)*100)}%`} · 内力 ${getSkillQiCost(id)}</span></div></article>`}).join('')}</section></main>`;
 }
 
 function bagView(){ return `<main class="page"><div class="section-title"><h3>行囊</h3><span>基础行囊</span></div><section class="inventory-list">${ITEMS.map(i=>`<article class="item-card"><div class="skill-head"><b>${i.name}</b><span class="skill-type">×${i.count}</span></div><p>${i.desc}</p></article>`).join('')}</section></main>`; }
@@ -124,9 +124,9 @@ function locationModal(id){
 
 function battleModal(){
   const current=getCurrentActor(battle);
-  const fighter=(f)=>`<div class="fighter ${current===f&&battle.status==='active'?'current':''} ${f.hp<=0?'dead':''}"><div class="fighter-top"><b>${f.name}</b><small>${Math.max(0,f.hp)}/${f.maxHp}</small></div><div class="hpbar"><span style="width:${pct(f.hp,f.maxHp)}%"></span></div></div>`;
+  const fighter=(f)=>`<div class="fighter ${current===f&&battle.status==='active'?'current':''} ${f.hp<=0?'dead':''}"><div class="fighter-top"><b>${f.name}</b><small>血 ${Math.max(0,f.hp)}/${f.maxHp} · 内 ${Math.max(0,f.qi??0)}/${f.maxQi??0}</small></div><div class="hpbar"><span style="width:${pct(f.hp,f.maxHp)}%"></span></div></div>`;
   let controls='';
-  if(battle.status==='active' && current?.side==='ally') controls=`<div class="skill-buttons"><button class="skill-btn" data-basic-attack><b>普通攻击</b><small>无需消耗 · 威力 100%</small></button>${current.skills.map(id=>{const s=SKILLS[id];return `<button class="skill-btn" data-skill="${id}"><b>${s.name}</b><small>${s.heal?'恢复气血':`威力 ${Math.round(s.power*100)}%`}</small></button>`}).join('')}</div>`;
+  if(battle.status==='active' && current?.side==='ally') controls=`<div class="skill-buttons"><button class="skill-btn" data-basic-attack><b>普通攻击</b><small>威力 100% · 回复 ${BASIC_ATTACK_QI_RECOVERY} 内力</small></button>${current.skills.map(id=>{const s=SKILLS[id];const cost=getSkillQiCost(id);const usable=canUseSkill(current,id);return `<button class="skill-btn" data-skill="${id}" ${usable?'':'disabled'}><b>${s.name}</b><small>${usable?(s.heal?'恢复气血':`威力 ${Math.round(s.power*100)}%`):'内力不足'} · 消耗 ${cost}</small></button>`}).join('')}</div>`;
   if(battle.status==='win') controls='<button class="primary full" data-battle-finish>领取战果</button>';
   if(battle.status==='lose') controls='<button class="secondary full" data-battle-leave>暂时撤退</button>';
   return `<div class="modal"><section class="sheet"><div class="sheet-handle"></div><div class="battle-title"><div><div class="eyebrow">速度演算 · 回合制</div><h2>交锋</h2></div><span class="turn-pill">第 ${battle.round} 回合</span></div><div class="combatants"><div class="side">${battle.allies.map(fighter).join('')}</div><div class="vs">VS</div><div class="side">${battle.enemies.map(fighter).join('')}</div></div><div class="battle-log">${battle.log.slice(-8).map(x=>`<div>· ${esc(x)}</div>`).join('')}</div>${controls}</section></div>`;
