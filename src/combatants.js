@@ -53,6 +53,7 @@ export function buildPlayerCombatant(state = null, martialArts = {}) {
     defense,
     speed,
     maxQi,
+    qi: maxQi,
     skills: [...new Set([...(base.skills || []), ...learned])],
     side: 'ally'
   };
@@ -71,6 +72,7 @@ export function buildCompanionCombatant(characterId, state = null) {
     realm: realm.realm,
     realmOrder: realm.realmOrder,
     maxQi,
+    qi: maxQi,
     hp: base.maxHp,
     side: 'ally'
   };
@@ -90,6 +92,7 @@ export function buildEnemyCombatant(enemyId, index = 0, context = null) {
     realm: realm.realm,
     realmOrder: realm.realmOrder,
     maxQi,
+    qi: maxQi,
     hp: base.maxHp,
     side: 'enemy'
   };
