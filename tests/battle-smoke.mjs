@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { createBattle, useSkill, basicAttack, getCurrentActor } from '../src/battle.js';
+import { createBattle, useSkill, basicAttack, getCurrentActor, getSkillQiCost, BASIC_ATTACK_QI_RECOVERY } from '../src/battle.js';
 import { defaultState } from '../src/state.js';
 
 const originalRandom = Math.random;
@@ -82,7 +82,7 @@ try {
   assert.ok(greatStarPlayer.attack > unrankedPlayer.attack, 'realm did not increase attack');
   assert.ok(greatStarPlayer.defense > unrankedPlayer.defense, 'realm did not increase defense');
   assert.ok(greatStarPlayer.speed > unrankedPlayer.speed, 'realm did not increase speed');
-  assert.ok(greatStarPlayer.maxQi > unrankedPlayer.maxQi, 'realm did not increase future qi capacity');
+  assert.ok(greatStarPlayer.maxQi > unrankedPlayer.maxQi, 'realm did not increase qi capacity');
   assert.equal(greatStarPlayer.realm, 'great_star', 'realm id not carried into combatant');
   assert.equal(greatStarPlayer.realmOrder, 3, 'realm order not carried into combatant');
 
@@ -102,7 +102,43 @@ try {
   assert.equal(fastVsBlack.allies[0].hp, fastVsBlack.allies[0].maxHp, 'slower enemy acted before faster player');
   assert.equal(getCurrentActor(fastVsBlack)?.id, 'player', 'faster player should own the first action');
 
-  console.log(`battle smoke passed: dynamic stats + speed queue + basic attack; Lv7大星位 speed=${fastVsBlack.allies[0].speed}, 黑无常 speed=${fastVsBlack.enemies[0].speed}`);
+  // 阶段 D：所有单位开战时必须拥有满内力。
+  const qiBattle = createBattle(['scout'], ['player'], fastState.martialArts, fastState);
+  const qiPlayer = qiBattle.allies[0];
+  assert.ok(qiPlayer.maxQi > 0, 'player max qi missing');
+  assert.equal(qiPlayer.qi, qiPlayer.maxQi, 'player should start battle at full qi');
+  assert.equal(qiBattle.enemies[0].qi, qiBattle.enemies[0].maxQi, 'enemy should start battle at full qi');
+
+  // 武学必须真实扣除配置的内力。
+  const qiBeforeSkill = qiPlayer.qi;
+  const skillCost = getSkillQiCost('qi_burst');
+  const hpBeforeSkill = qiBattle.enemies[0].hp;
+  useSkill(qiBattle, 'qi_burst');
+  assert.equal(qiPlayer.qi, qiBeforeSkill - skillCost, 'skill did not deduct configured qi cost');
+  assert.ok(qiBattle.enemies[0].hp < hpBeforeSkill, 'skill did not resolve after qi deduction');
+
+  // 普通攻击必须回复固定内力且不超过上限。
+  const recoverBattle = createBattle(['scout'], ['player'], fastState.martialArts, fastState);
+  const recoverPlayer = recoverBattle.allies[0];
+  recoverPlayer.qi = recoverPlayer.maxQi - 15;
+  const qiBeforeBasic = recoverPlayer.qi;
+  basicAttack(recoverBattle);
+  assert.equal(recoverPlayer.qi, qiBeforeBasic + BASIC_ATTACK_QI_RECOVERY, 'basic attack did not recover qi');
+
+  // 内力不足时，技能不得施放、不得扣血、不得推进当前行动者。
+  const insufficient = createBattle(['blackwuchang'], ['player'], fastState.martialArts, fastState);
+  const insufficientPlayer = insufficient.allies[0];
+  const insufficientCost = getSkillQiCost('qi_burst');
+  insufficientPlayer.qi = insufficientCost - 1;
+  const targetHpBeforeBlockedSkill = insufficient.enemies[0].hp;
+  const actorBeforeBlockedSkill = getCurrentActor(insufficient);
+  useSkill(insufficient, 'qi_burst');
+  assert.equal(insufficientPlayer.qi, insufficientCost - 1, 'blocked skill changed qi');
+  assert.equal(insufficient.enemies[0].hp, targetHpBeforeBlockedSkill, 'blocked skill damaged target');
+  assert.equal(getCurrentActor(insufficient), actorBeforeBlockedSkill, 'blocked skill advanced turn');
+  assert.ok(insufficient.log.at(-1)?.includes('内力不足'), 'blocked skill did not explain insufficient qi');
+
+  console.log(`battle smoke passed: dynamic stats + speed queue + qi economy; Lv7大星位 qi=${qiPlayer.maxQi}, 聚气破 cost=${skillCost}`);
 } finally {
   Math.random = originalRandom;
 }
