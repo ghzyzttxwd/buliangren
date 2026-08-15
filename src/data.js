@@ -22,15 +22,15 @@ export const CHARACTERS = {
 };
 
 export const SKILLS = {
-  basic_sword: { id:'basic_sword', name:'断风式', type:'招式', power:1.0, desc:'迅捷的一剑，造成100%攻击伤害。', playerLearnable:true },
-  qi_burst: { id:'qi_burst', name:'聚气破', type:'内功', power:1.45, desc:'运气于掌，造成145%攻击伤害。', playerLearnable:true },
-  folding_wind_sword: { id:'folding_wind_sword', name:'折风剑式', type:'招式', power:1.7, desc:'从无名残谱中整理出的三段折返剑路，造成170%攻击伤害。', playerLearnable:true, realmRequirement:'middle_star', masteryMax:5 },
-  butterfly_dart: { id:'butterfly_dart', name:'蝶影毒镖', type:'蛊术', power:1.15, desc:'灵巧掷出毒镖，造成115%攻击伤害。' },
-  miao_heal: { id:'miao_heal', name:'苗疆灵蛊', type:'秘术', heal:0.32, desc:'为己方生命最低者恢复32%最大生命。' },
-  phantom_note: { id:'phantom_note', name:'幻音诀', type:'内功', power:1.65, desc:'以音驭气，造成165%攻击伤害。' },
-  sky_slash: { id:'sky_slash', name:'岐王斩', type:'绝技', power:2.05, desc:'霸道剑势，造成205%攻击伤害。' },
-  corpse_thread: { id:'corpse_thread', name:'尸祖缚魂丝', type:'奇术', power:1.55, desc:'诡谲丝劲袭敌，造成155%攻击伤害。' },
-  red_moon: { id:'red_moon', name:'赤月尸舞', type:'绝技', power:2.2, desc:'尸祖秘术，造成220%攻击伤害。' }
+  basic_sword: { id:'basic_sword', name:'断风式', type:'招式', power:1.0, qiCost:12, desc:'迅捷的一剑，造成100%攻击伤害。', playerLearnable:true },
+  qi_burst: { id:'qi_burst', name:'聚气破', type:'内功', power:1.45, qiCost:28, desc:'运气于掌，造成145%攻击伤害。', playerLearnable:true },
+  folding_wind_sword: { id:'folding_wind_sword', name:'折风剑式', type:'招式', power:1.7, qiCost:36, desc:'从无名残谱中整理出的三段折返剑路，造成170%攻击伤害。', playerLearnable:true, realmRequirement:'middle_star', masteryMax:5 },
+  butterfly_dart: { id:'butterfly_dart', name:'蝶影毒镖', type:'蛊术', power:1.15, qiCost:18, desc:'灵巧掷出毒镖，造成115%攻击伤害。' },
+  miao_heal: { id:'miao_heal', name:'苗疆灵蛊', type:'秘术', heal:0.32, qiCost:24, desc:'为己方生命最低者恢复32%最大生命。' },
+  phantom_note: { id:'phantom_note', name:'幻音诀', type:'内功', power:1.65, qiCost:30, desc:'以音驭气，造成165%攻击伤害。' },
+  sky_slash: { id:'sky_slash', name:'岐王斩', type:'绝技', power:2.05, qiCost:42, desc:'霸道剑势，造成205%攻击伤害。' },
+  corpse_thread: { id:'corpse_thread', name:'尸祖缚魂丝', type:'奇术', power:1.55, qiCost:30, desc:'诡谲丝劲袭敌，造成155%攻击伤害。' },
+  red_moon: { id:'red_moon', name:'赤月尸舞', type:'绝技', power:2.2, qiCost:46, desc:'尸祖秘术，造成220%攻击伤害。' }
 };
 
 export const ENEMIES = {
