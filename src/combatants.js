@@ -11,6 +11,13 @@ function learnedPlayerSkills(martialArts = {}) {
     .map(([id]) => id);
 }
 
+function masteryMap(skillIds = [], martialArts = {}) {
+  return Object.fromEntries(skillIds.map(id => {
+    const mastery = Math.max(1, Math.floor(finite(martialArts[id]?.mastery, 1)));
+    return [id, mastery];
+  }));
+}
+
 function realmStats(realmId) {
   const realm = getRealm(realmId);
   return {
@@ -30,6 +37,7 @@ export function buildPlayerCombatant(state = null, martialArts = {}) {
   const levelDelta = Math.max(0, level - (base.level || 1));
   const realm = realmStats(player.realm || 'unranked');
   const learned = learnedPlayerSkills(martialArts);
+  const skills = [...new Set([...(base.skills || []), ...learned])];
 
   const baseHp = base.maxHp + levelDelta * 14;
   const baseAttack = base.attack + levelDelta * 2;
@@ -55,7 +63,8 @@ export function buildPlayerCombatant(state = null, martialArts = {}) {
     maxQi,
     qi: maxQi,
     statuses: [],
-    skills: [...new Set([...(base.skills || []), ...learned])],
+    skills,
+    skillMastery: masteryMap(skills, martialArts),
     side: 'ally'
   };
 }
@@ -67,6 +76,7 @@ export function buildCompanionCombatant(characterId, state = null) {
   const realm = realmStats(base.realm || 'unranked');
   const level = Math.max(1, Math.floor(finite(base.level, 1)));
   const maxQi = Math.round(finite(base.maxQi, 60 + level * 4 + realm.qiBonus));
+  const skills = [...(base.skills || [])];
 
   return {
     ...base,
@@ -75,6 +85,8 @@ export function buildCompanionCombatant(characterId, state = null) {
     maxQi,
     qi: maxQi,
     statuses: [],
+    skills,
+    skillMastery: masteryMap(skills),
     hp: base.maxHp,
     side: 'ally'
   };
@@ -87,6 +99,7 @@ export function buildEnemyCombatant(enemyId, index = 0, context = null) {
   const realm = realmStats(base.realm || 'unranked');
   const level = Math.max(1, Math.floor(finite(base.level, 1)));
   const maxQi = Math.round(finite(base.maxQi, 40 + level * 3 + realm.qiBonus));
+  const skills = [...(base.skills || [])];
 
   return {
     ...base,
@@ -96,6 +109,8 @@ export function buildEnemyCombatant(enemyId, index = 0, context = null) {
     maxQi,
     qi: maxQi,
     statuses: [],
+    skills,
+    skillMastery: masteryMap(skills),
     hp: base.maxHp,
     side: 'enemy'
   };
