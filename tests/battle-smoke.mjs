@@ -86,14 +86,15 @@ try {
   assert.equal(greatStarPlayer.realm, 'great_star', 'realm id not carried into combatant');
   assert.equal(greatStarPlayer.realmOrder, 3, 'realm order not carried into combatant');
 
-  // 阶段 C：高速敌人必须能先于低速玩家行动。
+  // 阶段 C + E：高速黑无常先手，而且现在会按 AI 使用武学。
   const slowState = defaultState();
   const slowVsBlack = createBattle(['blackwuchang'], ['player'], slowState.martialArts, slowState);
   assert.ok(slowVsBlack.allies[0].hp < slowVsBlack.allies[0].maxHp, 'faster enemy did not act before slow player');
-  assert.ok(slowVsBlack.log[1]?.includes('黑无常普通攻击'), 'enemy pre-emptive action missing from log');
+  assert.ok(slowVsBlack.log[1]?.includes('无常鬼爪'), 'black wuchang did not use configured martial art');
+  assert.ok(slowVsBlack.enemies[0].qi < slowVsBlack.enemies[0].maxQi, 'enemy martial art did not consume qi');
   assert.equal(getCurrentActor(slowVsBlack)?.id, 'player', 'control should return to player after faster enemy auto-turn');
 
-  // 同一敌人面对更快的 Lv.7 大星位玩家时，不应再获得先手。
+  // 同一敌人面对更快的 Lv.7 大星位玩家时，不应获得先手。
   const fastState = defaultState();
   fastState.player.level = 7;
   fastState.player.realm = 'great_star';
@@ -125,7 +126,7 @@ try {
   basicAttack(recoverBattle);
   assert.equal(recoverPlayer.qi, qiBeforeBasic + BASIC_ATTACK_QI_RECOVERY, 'basic attack did not recover qi');
 
-  // 内力不足时，技能不得施放、不得扣血、不得推进当前行动者。
+  // 内力不足时，玩家技能不得施放、不得扣血、不得推进当前行动者。
   const insufficient = createBattle(['blackwuchang'], ['player'], fastState.martialArts, fastState);
   const insufficientPlayer = insufficient.allies[0];
   const insufficientCost = getSkillQiCost('qi_burst');
@@ -138,7 +139,39 @@ try {
   assert.equal(getCurrentActor(insufficient), actorBeforeBlockedSkill, 'blocked skill advanced turn');
   assert.ok(insufficient.log.at(-1)?.includes('内力不足'), 'blocked skill did not explain insufficient qi');
 
-  console.log(`battle smoke passed: dynamic stats + speed queue + qi economy; Lv7大星位 qi=${qiPlayer.maxQi}, 聚气破 cost=${skillCost}`);
+  // 阶段 E：四类敌人必须携带境界、技能和 AI 数据进入战斗对象。
+  const enemyRoster = createBattle(['scout', 'guard', 'blackwuchang', 'palace_guard'], ['player'], fastState.martialArts, fastState);
+  const [scout, guard, black, palace] = enemyRoster.enemies;
+  assert.equal(scout.realm, 'small_star', 'scout realm missing');
+  assert.equal(guard.realm, 'middle_star', 'guard realm missing');
+  assert.equal(black.realm, 'great_star', 'black wuchang realm missing');
+  assert.equal(palace.realm, 'middle_star', 'palace guard realm missing');
+  assert.ok(scout.skills.includes('nether_spike'), 'scout skill missing');
+  assert.ok(guard.skills.includes('nether_heavy_palm'), 'guard skill missing');
+  assert.ok(black.skills.includes('wuchang_claw'), 'black wuchang skill missing');
+  assert.ok(palace.skills.includes('guard_breath'), 'palace guard healing skill missing');
+
+  // 力士的低 skillChance 在固定随机数下应选择普通攻击，形成行为差异。
+  const guardAi = createBattle(['guard'], ['player'], fastState.martialArts, fastState);
+  basicAttack(guardAi);
+  assert.ok(guardAi.log.some(line => line.includes('玄冥教力士普通攻击')), 'guard AI did not fall back to basic attack');
+
+  // 焦兰殿禁卫低血量时应优先使用治疗技能，而不是继续攻击。
+  const palaceHeal = createBattle(['palace_guard'], ['player'], fastState.martialArts, fastState);
+  palaceHeal.enemies[0].hp = 70;
+  const palaceQiBefore = palaceHeal.enemies[0].qi;
+  basicAttack(palaceHeal);
+  assert.ok(palaceHeal.log.some(line => line.includes('禁军调息')), 'low HP enemy did not choose healing skill');
+  assert.ok(palaceHeal.enemies[0].qi < palaceQiBefore, 'enemy healing skill did not consume qi');
+  assert.ok(palaceHeal.enemies[0].hp > 70, 'enemy healing skill did not restore enough HP after incoming attack');
+
+  // 敌人内力不足时必须自动退回普通攻击。
+  const blackNoQi = createBattle(['blackwuchang'], ['player'], fastState.martialArts, fastState);
+  blackNoQi.enemies[0].qi = 0;
+  basicAttack(blackNoQi);
+  assert.ok(blackNoQi.log.some(line => line.includes('黑无常普通攻击')), 'enemy with insufficient qi did not use basic attack');
+
+  console.log(`battle smoke passed: dynamic stats + speed queue + qi economy + enemy AI; 黑无常境界=${black.realm}, skill=${black.skills[0]}`);
 } finally {
   Math.random = originalRandom;
 }
