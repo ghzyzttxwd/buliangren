@@ -1,5 +1,6 @@
 import { SKILLS } from './data.js';
 import { buildPlayerCombatant, buildCompanionCombatant, buildEnemyCombatant } from './combatants.js';
+import { applyStatus, absorbShield, getControlStatus, resolveTurnEndStatuses } from './statuses.js';
 
 const alive = unit => unit?.hp > 0;
 const pick = arr => arr[Math.floor(Math.random() * arr.length)];
@@ -82,11 +83,11 @@ export function createBattle(enemyIds, partyIds, martialArts = {}, state = null)
       ? buildPlayerCombatant(state, martialArts)
       : buildCompanionCombatant(id, state))
     .filter(Boolean)
-    .map((unit, index) => ({ ...unit, controlResistance: getControlResistance(unit), _battleOrder: index }));
+    .map((unit, index) => ({ ...unit, statuses: unit.statuses || [], controlResistance: getControlResistance(unit), _battleOrder: index }));
   const enemies = enemyIds
     .map((id, i) => buildEnemyCombatant(id, i, state))
     .filter(Boolean)
-    .map((unit, index) => ({ ...unit, controlResistance: getControlResistance(unit), _battleOrder: allies.length + index }));
+    .map((unit, index) => ({ ...unit, statuses: unit.statuses || [], controlResistance: getControlResistance(unit), _battleOrder: allies.length + index }));
 
   const battle = {
     allies,
@@ -100,7 +101,7 @@ export function createBattle(enemyIds, partyIds, martialArts = {}, state = null)
   };
 
   rebuildTurnOrder(battle);
-  return resolveEnemyTurns(battle);
+  return resolveAutomaticTurns(battle);
 }
 
 export function calculateDamage(attacker, defender, power = 1, variance = null) {
@@ -148,6 +149,35 @@ function restoreQi(actor, amount = BASIC_ATTACK_QI_RECOVERY) {
   return actor.qi - before;
 }
 
+function applyIncomingDamage(battle, target, amount) {
+  const { hpDamage, absorbed } = absorbShield(target, amount);
+  if (absorbed > 0) battle.log.push(`${target.name}的护盾吸收了 ${absorbed} 点伤害。`);
+  target.hp = Math.max(0, target.hp - hpDamage);
+  return { hpDamage, absorbed };
+}
+
+function applySkillStatuses(battle, actor, skill, target) {
+  if (!target || !alive(target)) return;
+  for (const effect of skill.statusEffects || []) {
+    const result = applyStatus(target, effect, actor);
+    if (!result.applied) {
+      if (effect.type === 'control' && result.reason === 'resisted') {
+        battle.log.push(`${target.name}凭境界与气机抵住了【${effect.name || effect.id}】。`);
+      }
+      continue;
+    }
+
+    const status = result.status;
+    if (status.type === 'shield') {
+      battle.log.push(`${target.name}获得【${status.name}】，当前护盾 ${status.amount}。`);
+    } else if (status.type === 'poison') {
+      battle.log.push(`${target.name}陷入【${status.name}】${status.stacks > 1 ? `，叠加至 ${status.stacks} 层` : ''}。`);
+    } else if (status.type === 'control') {
+      battle.log.push(`${target.name}受到【${status.name}】，下一次行动将被跳过。`);
+    }
+  }
+}
+
 function applyBasicAttack(battle, actor) {
   if (!actor || !alive(actor)) return battle;
   const targets = opponentsFor(battle, actor).filter(alive);
@@ -155,9 +185,9 @@ function applyBasicAttack(battle, actor) {
   if (!target) return checkBattleEnd(battle);
 
   const amount = calculateDamage(actor, target, 1);
-  target.hp = Math.max(0, target.hp - amount);
+  const dealt = applyIncomingDamage(battle, target, amount);
   const recovered = restoreQi(actor);
-  battle.log.push(`${actor.name}普通攻击${target.name}，造成 ${amount} 点伤害${realmPressureNote(actor, target)}${recovered > 0 ? `，回复 ${recovered} 点内力` : ''}。`);
+  battle.log.push(`${actor.name}普通攻击${target.name}，造成 ${dealt.hpDamage} 点伤害${realmPressureNote(actor, target)}${recovered > 0 ? `，回复 ${recovered} 点内力` : ''}。`);
   if (!alive(target)) {
     battle.log.push(actor.side === 'ally' ? `${target.name}倒下了。` : `${target.name}暂时失去战斗能力。`);
   }
@@ -179,18 +209,30 @@ function applySkillAction(battle, actor, skillId) {
     const actual = Math.min(amount, target.maxHp - target.hp);
     target.hp += actual;
     battle.log.push(`${actor.name}施展【${skill.name}】，消耗 ${qiCost} 内力，${target.name}恢复 ${actual} 点气血。`);
+    applySkillStatuses(battle, actor, skill, target);
   } else {
     const targets = opponentsFor(battle, actor).filter(alive);
     const target = actor.side === 'ally' ? firstAlive(targets) : pick(targets);
     if (!target) return checkBattleEnd(battle);
     const amount = calculateDamage(actor, target, skill.power || 1);
-    target.hp = Math.max(0, target.hp - amount);
-    battle.log.push(`${actor.name}施展【${skill.name}】，消耗 ${qiCost} 内力，对${target.name}造成 ${amount} 点伤害${realmPressureNote(actor, target)}。`);
+    const dealt = applyIncomingDamage(battle, target, amount);
+    battle.log.push(`${actor.name}施展【${skill.name}】，消耗 ${qiCost} 内力，对${target.name}造成 ${dealt.hpDamage} 点伤害${realmPressureNote(actor, target)}。`);
+    if (alive(target)) applySkillStatuses(battle, actor, skill, target);
     if (!alive(target)) {
       battle.log.push(actor.side === 'ally' ? `${target.name}倒下了。` : `${target.name}暂时失去战斗能力。`);
     }
   }
 
+  return checkBattleEnd(battle);
+}
+
+function resolveActorTurnEnd(battle, actor) {
+  const result = resolveTurnEndStatuses(actor);
+  if (result.poisonDamage > 0) {
+    battle.log.push(`${actor.name}受到毒性侵蚀，损失 ${result.poisonDamage} 点气血。`);
+    if (!alive(actor)) battle.log.push(`${actor.name}被持续毒伤击倒。`);
+  }
+  for (const name of result.expired) battle.log.push(`${actor.name}身上的【${name}】效果结束。`);
   return checkBattleEnd(battle);
 }
 
@@ -234,7 +276,7 @@ function advanceTurnPointer(battle) {
   return battle;
 }
 
-function resolveEnemyTurns(battle) {
+function resolveAutomaticTurns(battle) {
   while (battle.status === 'active') {
     const actor = getCurrentActor(battle);
     if (!actor) {
@@ -243,6 +285,16 @@ function resolveEnemyTurns(battle) {
       rebuildTurnOrder(battle);
       continue;
     }
+
+    const control = getControlStatus(actor);
+    if (control) {
+      battle.log.push(`${actor.name}受【${control.name}】影响，本次行动被跳过。`);
+      resolveActorTurnEnd(battle, actor);
+      if (battle.status !== 'active') return battle;
+      advanceTurnPointer(battle);
+      continue;
+    }
+
     if (actor.side === 'ally') {
       syncAllyIndex(battle);
       return battle;
@@ -253,15 +305,19 @@ function resolveEnemyTurns(battle) {
     else applyBasicAttack(battle, actor);
 
     if (battle.status !== 'active') return battle;
+    resolveActorTurnEnd(battle, actor);
+    if (battle.status !== 'active') return battle;
     advanceTurnPointer(battle);
   }
   return battle;
 }
 
-function finishAllyAction(battle) {
+function finishAllyAction(battle, actor) {
+  if (battle.status !== 'active') return battle;
+  resolveActorTurnEnd(battle, actor);
   if (battle.status !== 'active') return battle;
   advanceTurnPointer(battle);
-  return resolveEnemyTurns(battle);
+  return resolveAutomaticTurns(battle);
 }
 
 export function basicAttack(battle) {
@@ -271,7 +327,7 @@ export function basicAttack(battle) {
 
   applyBasicAttack(battle, actor);
   if (battle.status !== 'active') return battle;
-  return finishAllyAction(battle);
+  return finishAllyAction(battle, actor);
 }
 
 export function useSkill(battle, skillId) {
@@ -288,5 +344,5 @@ export function useSkill(battle, skillId) {
 
   applySkillAction(battle, actor, skillId);
   if (battle.status !== 'active') return battle;
-  return finishAllyAction(battle);
+  return finishAllyAction(battle, actor);
 }
