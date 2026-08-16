@@ -249,7 +249,46 @@ try {
   assert.equal(getStatus(controlledEnemy, 'soul_bind'), null, 'one-turn control did not expire after skipped action');
   assert.ok(controlBattle.log.some(line => line.includes('【缚魂定身】效果结束')), 'control expiry log missing');
 
-  console.log(`battle smoke passed: dynamic stats + speed + qi + enemy AI + realm pressure + statuses; poison/shield/control lifecycle verified`);
+  // 阶段 H：折风剑式熟练 Lv.2 必须比 Lv.1 有温和但真实的伤害提升。
+  const masteryOneState = defaultState();
+  masteryOneState.player.level = 6;
+  masteryOneState.player.realm = 'middle_star';
+  masteryOneState.martialArts.folding_wind_sword = { learned: true, mastery: 1, exp: 0 };
+  const masteryOneBattle = createBattle(['guard'], ['player'], masteryOneState.martialArts, masteryOneState);
+  const masteryOneTargetHp = masteryOneBattle.enemies[0].hp;
+  useSkill(masteryOneBattle, 'folding_wind_sword');
+  const masteryOneDamage = masteryOneTargetHp - masteryOneBattle.enemies[0].hp;
+
+  const masteryTwoState = defaultState();
+  masteryTwoState.player.level = 6;
+  masteryTwoState.player.realm = 'middle_star';
+  masteryTwoState.martialArts.folding_wind_sword = { learned: true, mastery: 2, exp: 0 };
+  const masteryTwoBattle = createBattle(['guard'], ['player'], masteryTwoState.martialArts, masteryTwoState);
+  assert.equal(masteryTwoBattle.allies[0].skillMastery.folding_wind_sword, 2, 'mastery was not carried into combatant');
+  const masteryTwoTargetHp = masteryTwoBattle.enemies[0].hp;
+  useSkill(masteryTwoBattle, 'folding_wind_sword');
+  const masteryTwoDamage = masteryTwoTargetHp - masteryTwoBattle.enemies[0].hp;
+  assert.ok(masteryTwoDamage > masteryOneDamage, 'mastery level did not increase martial art damage');
+  assert.ok(masteryTwoDamage <= masteryOneDamage * 1.1, 'mastery bonus is too large for one level');
+
+  // 阶段 H：境界不足时即使存档中已经学会武学，也不得施放或推进回合。
+  const lowRealmSkillState = defaultState();
+  lowRealmSkillState.player.level = 6;
+  lowRealmSkillState.player.realm = 'small_star';
+  lowRealmSkillState.martialArts.folding_wind_sword = { learned: true, mastery: 2, exp: 0 };
+  const realmBlockedBattle = createBattle(['guard'], ['player'], lowRealmSkillState.martialArts, lowRealmSkillState);
+  const blockedPlayer = realmBlockedBattle.allies[0];
+  const blockedTarget = realmBlockedBattle.enemies[0];
+  const blockedQiBefore = blockedPlayer.qi;
+  const blockedHpBefore = blockedTarget.hp;
+  const blockedActorBefore = getCurrentActor(realmBlockedBattle);
+  useSkill(realmBlockedBattle, 'folding_wind_sword');
+  assert.equal(blockedPlayer.qi, blockedQiBefore, 'realm-blocked skill consumed qi');
+  assert.equal(blockedTarget.hp, blockedHpBefore, 'realm-blocked skill damaged target');
+  assert.equal(getCurrentActor(realmBlockedBattle), blockedActorBefore, 'realm-blocked skill advanced turn');
+  assert.ok(realmBlockedBattle.log.at(-1)?.includes('境界不足'), 'realm-blocked skill did not explain requirement');
+
+  console.log(`battle smoke passed: dynamic stats + speed + qi + enemy AI + realm pressure + statuses + mastery; 折风Lv1=${masteryOneDamage}, Lv2=${masteryTwoDamage}`);
 } finally {
   Math.random = originalRandom;
 }
