@@ -11,6 +11,7 @@ import {
   getControlResistance,
   getInitiative
 } from '../src/battle.js';
+import { getStatus } from '../src/statuses.js';
 import { defaultState } from '../src/state.js';
 
 const originalRandom = Math.random;
@@ -206,7 +207,49 @@ try {
   assert.ok(getControlResistance({ realmOrder: 3 }) > getControlResistance({ realmOrder: 1 }), 'control resistance did not rise with realm');
   assert.ok(black.controlResistance > scout.controlResistance, 'combatants did not carry realm-based control resistance');
 
-  console.log(`battle smoke passed: dynamic stats + speed queue + qi economy + enemy AI + realm pressure; same=${sameDamage}, high=${pressuredDamage}, suppressed=${suppressedDamage}`);
+  // 阶段 G：蝶影毒镖必须施加中毒，持续回合中造成伤害并正确到期。
+  const poisonBattle = createBattle(['guard'], ['chimeng']);
+  const poisonTarget = poisonBattle.enemies[0];
+  useSkill(poisonBattle, 'butterfly_dart');
+  const poisonStatus = getStatus(poisonTarget, 'poisoned');
+  assert.ok(poisonStatus, 'poison skill did not apply poison status');
+  assert.equal(poisonStatus.type, 'poison', 'poison status type incorrect');
+  assert.equal(poisonStatus.source, 'chimeng', 'poison status source missing');
+  assert.equal(poisonStatus.duration, 2, 'poison duration did not tick after target turn');
+  assert.ok(poisonBattle.log.some(line => line.includes('陷入【中毒】')), 'poison application log missing');
+  assert.ok(poisonBattle.log.some(line => line.includes('毒性侵蚀')), 'poison damage log missing');
+  basicAttack(poisonBattle);
+  assert.equal(getStatus(poisonTarget, 'poisoned')?.duration, 1, 'poison did not continue across turns');
+  basicAttack(poisonBattle);
+  assert.equal(getStatus(poisonTarget, 'poisoned'), null, 'poison status did not expire');
+  assert.ok(poisonBattle.log.some(line => line.includes('【中毒】效果结束')), 'poison expiry log missing');
+
+  // 阶段 G：苗疆灵蛊产生护盾，护盾先于气血承伤，并在持续时间结束后移除。
+  const shieldBattle = createBattle(['guard'], ['chimeng']);
+  const shieldActor = shieldBattle.allies[0];
+  shieldActor.hp = 50;
+  useSkill(shieldBattle, 'miao_heal');
+  const shieldAfterHeal = getStatus(shieldActor, 'miao_shield');
+  assert.ok(shieldAfterHeal, 'healing skill did not apply shield');
+  assert.equal(shieldAfterHeal.type, 'shield', 'shield status type incorrect');
+  assert.ok(shieldBattle.log.some(line => line.includes('获得【灵蛊护体】')), 'shield application log missing');
+  assert.ok(shieldBattle.log.some(line => line.includes('护盾吸收')), 'shield did not absorb incoming damage');
+  basicAttack(shieldBattle);
+  assert.equal(getStatus(shieldActor, 'miao_shield'), null, 'shield did not expire after configured duration');
+  assert.ok(shieldBattle.log.some(line => line.includes('【灵蛊护体】效果结束')), 'shield expiry log missing');
+
+  // 阶段 G：尸祖缚魂丝施加控制后，目标下一次行动必须被跳过并随后解除。
+  const controlBattle = createBattle(['guard'], ['jiangchen']);
+  const controlledEnemy = controlBattle.enemies[0];
+  const allyHpBeforeControl = controlBattle.allies[0].hp;
+  useSkill(controlBattle, 'corpse_thread');
+  assert.ok(controlBattle.log.some(line => line.includes('受到【缚魂定身】')), 'control skill did not apply control status');
+  assert.ok(controlBattle.log.some(line => line.includes('本次行动被跳过')), 'controlled target did not skip its action');
+  assert.equal(controlBattle.allies[0].hp, allyHpBeforeControl, 'controlled enemy still dealt damage during skipped action');
+  assert.equal(getStatus(controlledEnemy, 'soul_bind'), null, 'one-turn control did not expire after skipped action');
+  assert.ok(controlBattle.log.some(line => line.includes('【缚魂定身】效果结束')), 'control expiry log missing');
+
+  console.log(`battle smoke passed: dynamic stats + speed + qi + enemy AI + realm pressure + statuses; poison/shield/control lifecycle verified`);
 } finally {
   Math.random = originalRandom;
 }
