@@ -9,6 +9,14 @@ function allUnits(battle) {
   return [...battle.allies, ...battle.enemies];
 }
 
+function teamFor(battle, actor) {
+  return actor?.side === 'enemy' ? battle.enemies : battle.allies;
+}
+
+function opponentsFor(battle, actor) {
+  return actor?.side === 'enemy' ? battle.allies : battle.enemies;
+}
+
 function compareTurnOrder(a, b) {
   const speedDiff = (b.speed || 0) - (a.speed || 0);
   if (Math.abs(speedDiff) > 0.0001) return speedDiff;
@@ -77,12 +85,14 @@ function damage(attacker, defender, power = 1) {
   return Math.max(1, Math.round(raw));
 }
 
-function lowestHpAlly(allies) {
-  return [...allies].filter(alive).sort((a, b) => (a.hp / a.maxHp) - (b.hp / b.maxHp))[0];
+function lowestHpUnit(units) {
+  return [...units]
+    .filter(alive)
+    .sort((a, b) => (a.hp / a.maxHp) - (b.hp / b.maxHp))[0];
 }
 
-function firstAliveEnemy(battle) {
-  return battle.enemies.find(alive);
+function firstAlive(units) {
+  return units.find(alive);
 }
 
 function finish(battle, status) {
@@ -107,9 +117,8 @@ function restoreQi(actor, amount = BASIC_ATTACK_QI_RECOVERY) {
 
 function applyBasicAttack(battle, actor) {
   if (!actor || !alive(actor)) return battle;
-  const target = actor.side === 'ally'
-    ? firstAliveEnemy(battle)
-    : pick(battle.allies.filter(alive));
+  const targets = opponentsFor(battle, actor).filter(alive);
+  const target = actor.side === 'ally' ? firstAlive(targets) : pick(targets);
   if (!target) return checkBattleEnd(battle);
 
   const amount = damage(actor, target, 1);
@@ -120,6 +129,56 @@ function applyBasicAttack(battle, actor) {
     battle.log.push(actor.side === 'ally' ? `${target.name}倒下了。` : `${target.name}暂时失去战斗能力。`);
   }
   return checkBattleEnd(battle);
+}
+
+function applySkillAction(battle, actor, skillId) {
+  const skill = SKILLS[skillId];
+  if (!skill || !actor?.skills?.includes(skillId)) return battle;
+
+  const qiCost = getSkillQiCost(skillId);
+  if (!canUseSkill(actor, skillId)) return battle;
+  actor.qi = Math.max(0, (actor.qi ?? 0) - qiCost);
+
+  if (skill.heal) {
+    const target = lowestHpUnit(teamFor(battle, actor));
+    if (!target) return battle;
+    const amount = Math.max(1, Math.round(target.maxHp * skill.heal));
+    const actual = Math.min(amount, target.maxHp - target.hp);
+    target.hp += actual;
+    battle.log.push(`${actor.name}施展【${skill.name}】，消耗 ${qiCost} 内力，${target.name}恢复 ${actual} 点气血。`);
+  } else {
+    const targets = opponentsFor(battle, actor).filter(alive);
+    const target = actor.side === 'ally' ? firstAlive(targets) : pick(targets);
+    if (!target) return checkBattleEnd(battle);
+    const amount = damage(actor, target, skill.power || 1);
+    target.hp = Math.max(0, target.hp - amount);
+    battle.log.push(`${actor.name}施展【${skill.name}】，消耗 ${qiCost} 内力，对${target.name}造成 ${amount} 点伤害。`);
+    if (!alive(target)) {
+      battle.log.push(actor.side === 'ally' ? `${target.name}倒下了。` : `${target.name}暂时失去战斗能力。`);
+    }
+  }
+
+  return checkBattleEnd(battle);
+}
+
+function chooseEnemyAction(battle, actor) {
+  const profile = actor.aiProfile || {};
+  const usable = (actor.skills || []).filter(skillId => canUseSkill(actor, skillId));
+  const healingSkills = usable.filter(skillId => SKILLS[skillId]?.heal);
+  const offensiveSkills = usable.filter(skillId => !SKILLS[skillId]?.heal);
+  const lowest = lowestHpUnit(teamFor(battle, actor));
+  const healThreshold = Number.isFinite(profile.healThreshold) ? profile.healThreshold : 0.35;
+
+  if (healingSkills.length && lowest && lowest.hp / lowest.maxHp <= healThreshold) {
+    return { type: 'skill', skillId: healingSkills[0] };
+  }
+
+  const skillChance = Number.isFinite(profile.skillChance) ? profile.skillChance : 0.5;
+  if (offensiveSkills.length && Math.random() < skillChance) {
+    return { type: 'skill', skillId: pick(offensiveSkills) };
+  }
+
+  return { type: 'basic' };
 }
 
 function advanceTurnPointer(battle) {
@@ -156,7 +215,10 @@ function resolveEnemyTurns(battle) {
       return battle;
     }
 
-    applyBasicAttack(battle, actor);
+    const action = chooseEnemyAction(battle, actor);
+    if (action.type === 'skill') applySkillAction(battle, actor, action.skillId);
+    else applyBasicAttack(battle, actor);
+
     if (battle.status !== 'active') return battle;
     advanceTurnPointer(battle);
   }
@@ -186,30 +248,12 @@ export function useSkill(battle, skillId) {
   const skill = SKILLS[skillId];
   if (!skill || !actor.skills.includes(skillId)) return battle;
 
-  const qiCost = getSkillQiCost(skillId);
   if (!canUseSkill(actor, skillId)) {
     battle.log.push(`${actor.name}内力不足，无法施展【${skill.name}】。`);
     return battle;
   }
-  actor.qi = Math.max(0, (actor.qi ?? 0) - qiCost);
 
-  if (skill.heal) {
-    const target = lowestHpAlly(battle.allies);
-    if (!target) return battle;
-    const amount = Math.max(1, Math.round(target.maxHp * skill.heal));
-    const actual = Math.min(amount, target.maxHp - target.hp);
-    target.hp += actual;
-    battle.log.push(`${actor.name}施展【${skill.name}】，消耗 ${qiCost} 内力，${target.name}恢复 ${actual} 点气血。`);
-  } else {
-    const target = firstAliveEnemy(battle);
-    if (!target) return finish(battle, 'win');
-    const amount = damage(actor, target, skill.power || 1);
-    target.hp = Math.max(0, target.hp - amount);
-    battle.log.push(`${actor.name}施展【${skill.name}】，消耗 ${qiCost} 内力，对${target.name}造成 ${amount} 点伤害。`);
-    if (!alive(target)) battle.log.push(`${target.name}倒下了。`);
-  }
-
-  checkBattleEnd(battle);
+  applySkillAction(battle, actor, skillId);
   if (battle.status !== 'active') return battle;
   return finishAllyAction(battle);
 }
