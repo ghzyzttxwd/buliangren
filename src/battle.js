@@ -3,6 +3,7 @@ import { buildPlayerCombatant, buildCompanionCombatant, buildEnemyCombatant } fr
 
 const alive = unit => unit?.hp > 0;
 const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 export const BASIC_ATTACK_QI_RECOVERY = 10;
 
 function allUnits(battle) {
@@ -17,9 +18,32 @@ function opponentsFor(battle, actor) {
   return actor?.side === 'enemy' ? battle.allies : battle.enemies;
 }
 
+export function getRealmDelta(attacker, defender) {
+  return (attacker?.realmOrder || 0) - (defender?.realmOrder || 0);
+}
+
+export function getRealmPressure(attacker, defender) {
+  const delta = clamp(getRealmDelta(attacker, defender), -5, 5);
+  const damageMultiplier = 1 + Math.max(0, delta) * 0.06;
+  const mitigationMultiplier = 1 - Math.max(0, -delta) * 0.05;
+  return {
+    delta,
+    damageMultiplier: Math.min(1.3, damageMultiplier),
+    mitigationMultiplier: Math.max(0.75, mitigationMultiplier)
+  };
+}
+
+export function getControlResistance(unit) {
+  return Math.min(0.45, Math.max(0, unit?.realmOrder || 0) * 0.06);
+}
+
+export function getInitiative(unit) {
+  return (unit?.speed || 0) + Math.max(0, unit?.realmOrder || 0) * 0.6;
+}
+
 function compareTurnOrder(a, b) {
-  const speedDiff = (b.speed || 0) - (a.speed || 0);
-  if (Math.abs(speedDiff) > 0.0001) return speedDiff;
+  const initiativeDiff = getInitiative(b) - getInitiative(a);
+  if (Math.abs(initiativeDiff) > 0.0001) return initiativeDiff;
   if (a.side !== b.side) return a.side === 'ally' ? -1 : 1;
   return (a._battleOrder || 0) - (b._battleOrder || 0);
 }
@@ -58,11 +82,11 @@ export function createBattle(enemyIds, partyIds, martialArts = {}, state = null)
       ? buildPlayerCombatant(state, martialArts)
       : buildCompanionCombatant(id, state))
     .filter(Boolean)
-    .map((unit, index) => ({ ...unit, _battleOrder: index }));
+    .map((unit, index) => ({ ...unit, controlResistance: getControlResistance(unit), _battleOrder: index }));
   const enemies = enemyIds
     .map((id, i) => buildEnemyCombatant(id, i, state))
     .filter(Boolean)
-    .map((unit, index) => ({ ...unit, _battleOrder: allies.length + index }));
+    .map((unit, index) => ({ ...unit, controlResistance: getControlResistance(unit), _battleOrder: allies.length + index }));
 
   const battle = {
     allies,
@@ -79,10 +103,19 @@ export function createBattle(enemyIds, partyIds, martialArts = {}, state = null)
   return resolveEnemyTurns(battle);
 }
 
-function damage(attacker, defender, power = 1) {
-  const variance = .92 + Math.random() * .16;
-  const raw = attacker.attack * power * variance - defender.defense * .55;
-  return Math.max(1, Math.round(raw));
+export function calculateDamage(attacker, defender, power = 1, variance = null) {
+  const rolledVariance = Number.isFinite(variance) ? variance : .92 + Math.random() * .16;
+  const baseRaw = attacker.attack * power * rolledVariance - defender.defense * .55;
+  const pressure = getRealmPressure(attacker, defender);
+  const scaled = baseRaw * pressure.damageMultiplier * pressure.mitigationMultiplier;
+  return Math.max(1, Math.round(scaled));
+}
+
+function realmPressureNote(attacker, defender) {
+  const delta = getRealmDelta(attacker, defender);
+  if (delta >= 2) return '，境界压制生效';
+  if (delta <= -2) return '，受到境界压制';
+  return '';
 }
 
 function lowestHpUnit(units) {
@@ -121,10 +154,10 @@ function applyBasicAttack(battle, actor) {
   const target = actor.side === 'ally' ? firstAlive(targets) : pick(targets);
   if (!target) return checkBattleEnd(battle);
 
-  const amount = damage(actor, target, 1);
+  const amount = calculateDamage(actor, target, 1);
   target.hp = Math.max(0, target.hp - amount);
   const recovered = restoreQi(actor);
-  battle.log.push(`${actor.name}普通攻击${target.name}，造成 ${amount} 点伤害${recovered > 0 ? `，回复 ${recovered} 点内力` : ''}。`);
+  battle.log.push(`${actor.name}普通攻击${target.name}，造成 ${amount} 点伤害${realmPressureNote(actor, target)}${recovered > 0 ? `，回复 ${recovered} 点内力` : ''}。`);
   if (!alive(target)) {
     battle.log.push(actor.side === 'ally' ? `${target.name}倒下了。` : `${target.name}暂时失去战斗能力。`);
   }
@@ -150,9 +183,9 @@ function applySkillAction(battle, actor, skillId) {
     const targets = opponentsFor(battle, actor).filter(alive);
     const target = actor.side === 'ally' ? firstAlive(targets) : pick(targets);
     if (!target) return checkBattleEnd(battle);
-    const amount = damage(actor, target, skill.power || 1);
+    const amount = calculateDamage(actor, target, skill.power || 1);
     target.hp = Math.max(0, target.hp - amount);
-    battle.log.push(`${actor.name}施展【${skill.name}】，消耗 ${qiCost} 内力，对${target.name}造成 ${amount} 点伤害。`);
+    battle.log.push(`${actor.name}施展【${skill.name}】，消耗 ${qiCost} 内力，对${target.name}造成 ${amount} 点伤害${realmPressureNote(actor, target)}。`);
     if (!alive(target)) {
       battle.log.push(actor.side === 'ally' ? `${target.name}倒下了。` : `${target.name}暂时失去战斗能力。`);
     }
