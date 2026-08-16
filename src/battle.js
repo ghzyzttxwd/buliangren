@@ -1,5 +1,6 @@
 import { SKILLS } from './data.js';
 import { buildPlayerCombatant, buildCompanionCombatant, buildEnemyCombatant } from './combatants.js';
+import { getRealm } from './progression.js';
 import { applyStatus, absorbShield, getControlStatus, resolveTurnEndStatuses } from './statuses.js';
 
 const alive = unit => unit?.hp > 0;
@@ -71,10 +72,31 @@ export function getSkillQiCost(skillId) {
   return Number.isFinite(cost) ? Math.max(0, Math.round(cost)) : 0;
 }
 
+export function getSkillMastery(actor, skillId) {
+  const raw = actor?.skillMastery?.[skillId];
+  const max = Math.max(1, Math.round(SKILLS[skillId]?.masteryMax || 5));
+  return clamp(Number.isFinite(raw) ? Math.floor(raw) : 1, 1, max);
+}
+
+export function getMasteryPowerMultiplier(actor, skillId) {
+  return 1 + Math.max(0, getSkillMastery(actor, skillId) - 1) * 0.04;
+}
+
+export function meetsSkillRealmRequirement(actor, skillId) {
+  const requirement = SKILLS[skillId]?.realmRequirement;
+  if (!requirement) return true;
+  return (actor?.realmOrder || 0) >= getRealm(requirement).order;
+}
+
+export function getSkillBlockReason(actor, skillId) {
+  if (!actor || !alive(actor) || !actor.skills?.includes(skillId) || !SKILLS[skillId]) return 'invalid';
+  if (!meetsSkillRealmRequirement(actor, skillId)) return 'realm';
+  if ((actor.qi ?? 0) < getSkillQiCost(skillId)) return 'qi';
+  return null;
+}
+
 export function canUseSkill(actor, skillId) {
-  if (!actor || !alive(actor)) return false;
-  if (!actor.skills?.includes(skillId) || !SKILLS[skillId]) return false;
-  return (actor.qi ?? 0) >= getSkillQiCost(skillId);
+  return getSkillBlockReason(actor, skillId) === null;
 }
 
 export function createBattle(enemyIds, partyIds, martialArts = {}, state = null) {
@@ -214,7 +236,8 @@ function applySkillAction(battle, actor, skillId) {
     const targets = opponentsFor(battle, actor).filter(alive);
     const target = actor.side === 'ally' ? firstAlive(targets) : pick(targets);
     if (!target) return checkBattleEnd(battle);
-    const amount = calculateDamage(actor, target, skill.power || 1);
+    const effectivePower = (skill.power || 1) * getMasteryPowerMultiplier(actor, skillId);
+    const amount = calculateDamage(actor, target, effectivePower);
     const dealt = applyIncomingDamage(battle, target, amount);
     battle.log.push(`${actor.name}施展【${skill.name}】，消耗 ${qiCost} 内力，对${target.name}造成 ${dealt.hpDamage} 点伤害${realmPressureNote(actor, target)}。`);
     if (alive(target)) applySkillStatuses(battle, actor, skill, target);
@@ -337,8 +360,10 @@ export function useSkill(battle, skillId) {
   const skill = SKILLS[skillId];
   if (!skill || !actor.skills.includes(skillId)) return battle;
 
-  if (!canUseSkill(actor, skillId)) {
-    battle.log.push(`${actor.name}内力不足，无法施展【${skill.name}】。`);
+  const blockReason = getSkillBlockReason(actor, skillId);
+  if (blockReason) {
+    if (blockReason === 'realm') battle.log.push(`${actor.name}境界不足，无法施展【${skill.name}】。`);
+    else if (blockReason === 'qi') battle.log.push(`${actor.name}内力不足，无法施展【${skill.name}】。`);
     return battle;
   }
 
