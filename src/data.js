@@ -30,14 +30,36 @@ export const SKILLS = {
   phantom_note: { id:'phantom_note', name:'幻音诀', type:'内功', power:1.65, qiCost:30, desc:'以音驭气，造成165%攻击伤害。' },
   sky_slash: { id:'sky_slash', name:'岐王斩', type:'绝技', power:2.05, qiCost:42, desc:'霸道剑势，造成205%攻击伤害。' },
   corpse_thread: { id:'corpse_thread', name:'尸祖缚魂丝', type:'奇术', power:1.55, qiCost:30, desc:'诡谲丝劲袭敌，造成155%攻击伤害。' },
-  red_moon: { id:'red_moon', name:'赤月尸舞', type:'绝技', power:2.2, qiCost:46, desc:'尸祖秘术，造成220%攻击伤害。' }
+  red_moon: { id:'red_moon', name:'赤月尸舞', type:'绝技', power:2.2, qiCost:46, desc:'尸祖秘术，造成220%攻击伤害。' },
+
+  nether_spike: { id:'nether_spike', name:'冥水刺', type:'招式', power:1.18, qiCost:14, desc:'玄冥教探子惯用的短促突刺。' },
+  nether_heavy_palm: { id:'nether_heavy_palm', name:'玄冥重掌', type:'外功', power:1.38, qiCost:22, desc:'力士蓄劲拍出的沉重掌力。' },
+  wuchang_claw: { id:'wuchang_claw', name:'无常鬼爪', type:'阴功', power:1.62, qiCost:30, desc:'黑无常以阴寒劲力催动的狠辣爪功。' },
+  palace_saber: { id:'palace_saber', name:'禁军横刀', type:'刀法', power:1.3, qiCost:18, desc:'焦兰殿禁卫训练有素的横刀劈斩。' },
+  guard_breath: { id:'guard_breath', name:'禁军调息', type:'内功', heal:0.24, qiCost:22, desc:'短暂调息，恢复自身一部分气血。' }
 };
 
 export const ENEMIES = {
-  scout: { id:'scout', name:'玄冥教探子', maxHp:88, attack:16, defense:5, speed:9 },
-  guard: { id:'guard', name:'玄冥教力士', maxHp:125, attack:20, defense:8, speed:7 },
-  blackwuchang: { id:'blackwuchang', name:'黑无常', maxHp:240, attack:29, defense:12, speed:15 },
-  palace_guard: { id:'palace_guard', name:'焦兰殿禁卫', maxHp:155, attack:23, defense:10, speed:10 }
+  scout: {
+    id:'scout', name:'玄冥教探子', level:2, realm:'small_star',
+    maxHp:88, attack:16, defense:5, speed:9,
+    skills:['nether_spike'], aiProfile:{ skillChance:0.65, healThreshold:0.35 }
+  },
+  guard: {
+    id:'guard', name:'玄冥教力士', level:4, realm:'middle_star',
+    maxHp:125, attack:20, defense:8, speed:7,
+    skills:['nether_heavy_palm'], aiProfile:{ skillChance:0.35, healThreshold:0.35 }
+  },
+  blackwuchang: {
+    id:'blackwuchang', name:'黑无常', level:7, realm:'great_star',
+    maxHp:240, attack:29, defense:12, speed:15,
+    skills:['wuchang_claw'], aiProfile:{ skillChance:0.85, healThreshold:0.35 }
+  },
+  palace_guard: {
+    id:'palace_guard', name:'焦兰殿禁卫', level:5, realm:'middle_star',
+    maxHp:155, attack:23, defense:10, speed:10,
+    skills:['palace_saber', 'guard_breath'], aiProfile:{ skillChance:0.6, healThreshold:0.55 }
+  }
 };
 
 const unlocked = (state, id) => state?.world?.unlockedLocations?.includes(id);
