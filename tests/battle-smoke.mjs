@@ -1,5 +1,16 @@
 import assert from 'node:assert/strict';
-import { createBattle, useSkill, basicAttack, getCurrentActor, getSkillQiCost, BASIC_ATTACK_QI_RECOVERY } from '../src/battle.js';
+import {
+  createBattle,
+  useSkill,
+  basicAttack,
+  getCurrentActor,
+  getSkillQiCost,
+  BASIC_ATTACK_QI_RECOVERY,
+  calculateDamage,
+  getRealmPressure,
+  getControlResistance,
+  getInitiative
+} from '../src/battle.js';
 import { defaultState } from '../src/state.js';
 
 const originalRandom = Math.random;
@@ -171,7 +182,31 @@ try {
   basicAttack(blackNoQi);
   assert.ok(blackNoQi.log.some(line => line.includes('黑无常普通攻击')), 'enemy with insufficient qi did not use basic attack');
 
-  console.log(`battle smoke passed: dynamic stats + speed queue + qi economy + enemy AI; 黑无常境界=${black.realm}, skill=${black.skills[0]}`);
+  // 阶段 F：同境界时不产生额外压制；高境界输出提高，低境界攻击高境界会被减伤。
+  const sameAttacker = { attack: 30, realmOrder: 2 };
+  const sameDefender = { defense: 10, realmOrder: 2 };
+  const highAttacker = { attack: 30, realmOrder: 5 };
+  const lowAttacker = { attack: 30, realmOrder: 0 };
+  const highDefender = { defense: 10, realmOrder: 3 };
+  const sameDamage = calculateDamage(sameAttacker, sameDefender, 1, 1);
+  const pressuredDamage = calculateDamage(highAttacker, sameDefender, 1, 1);
+  const suppressedDamage = calculateDamage(lowAttacker, highDefender, 1, 1);
+  assert.deepEqual(getRealmPressure(sameAttacker, sameDefender), { delta: 0, damageMultiplier: 1, mitigationMultiplier: 1 }, 'same realm should not create pressure');
+  assert.ok(pressuredDamage > sameDamage, 'higher realm did not increase damage');
+  assert.ok(suppressedDamage < sameDamage, 'higher realm defender did not reduce incoming damage');
+
+  // 境界只提供轻度先手修正，速度仍然是核心属性。
+  const highRealmInitiative = getInitiative({ speed: 15, realmOrder: 3 });
+  const lowRealmInitiative = getInitiative({ speed: 16, realmOrder: 0 });
+  assert.ok(highRealmInitiative > lowRealmInitiative, 'large realm gap did not affect initiative');
+  assert.ok(getInitiative({ speed: 18, realmOrder: 0 }) > highRealmInitiative, 'realm initiative bonus overwhelmed a clearly faster unit');
+
+  // 控制抗性接口先随境界稳定提升，真正控制效果留到阶段 G。
+  assert.equal(getControlResistance({ realmOrder: 0 }), 0, 'unranked control resistance should start at zero');
+  assert.ok(getControlResistance({ realmOrder: 3 }) > getControlResistance({ realmOrder: 1 }), 'control resistance did not rise with realm');
+  assert.ok(black.controlResistance > scout.controlResistance, 'combatants did not carry realm-based control resistance');
+
+  console.log(`battle smoke passed: dynamic stats + speed queue + qi economy + enemy AI + realm pressure; same=${sameDamage}, high=${pressuredDamage}, suppressed=${suppressedDamage}`);
 } finally {
   Math.random = originalRandom;
 }
