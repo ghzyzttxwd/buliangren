@@ -147,9 +147,11 @@ function battleModal(){
   if(battle.status==='active' && current?.side==='ally') controls=`<div class="skill-buttons"><button class="skill-btn" data-basic-attack><b>普通攻击</b><small>威力 100% · 回复 ${BASIC_ATTACK_QI_RECOVERY} 内力</small></button>${current.skills.map(id=>{const s=SKILLS[id];const cost=getSkillQiCost(id);const block=getSkillBlockReason(current,id);const usable=canUseSkill(current,id);const mastery=getSkillMastery(current,id);const effectivePower=Math.round((s.power||1)*getMasteryPowerMultiplier(current,id)*100);const reason=block==='realm'?`境界不足 · 需${getRealmName(s.realmRequirement)}`:block==='qi'?'内力不足':block?'当前不可用':'';const effectText=s.heal?'恢复气血':`威力 ${effectivePower}%`;return `<button class="skill-btn" data-skill="${id}" ${usable?'':'disabled'}><b>${s.name}</b><small>${usable?effectText:reason} · 熟练 ${mastery} · 消耗 ${cost}</small></button>`}).join('')}</div>`;
   if(battle.status==='win') controls='<button class="primary full" data-battle-finish>领取战果</button>';
   if(battle.status==='lose') controls='<button class="secondary full" data-battle-leave>暂时撤退</button>';
+  if(battle.uiTest) controls+=`<button class="secondary full" data-battle-leave>退出界面验收</button>`;
   const currentBanner=battle.status==='active'&&current?`<div class="current-actor-banner"><span>当前行动</span><b>${esc(current.name)}</b><small>${getRealmName(current.realm)} · 速度 ${current.speed}</small></div>`:'';
   const orderBanner=battle.status==='active'?`<div class="turn-order"><span>本回合顺序</span><div>${roundOrder}</div></div>`:'';
-  return `<div class="modal"><section class="sheet"><div class="sheet-handle"></div><div class="battle-title"><div><div class="eyebrow">速度演算 · 回合制</div><h2>交锋</h2></div><span class="turn-pill">第 ${battle.round} 回合</span></div>${currentBanner}${orderBanner}<div class="combatants"><div class="side">${battle.allies.map(fighter).join('')}</div><div class="vs">VS</div><div class="side">${battle.enemies.map(fighter).join('')}</div></div><div class="battle-log">${battle.log.slice(-10).map(x=>`<div>· ${esc(x)}</div>`).join('')}</div>${controls}</section></div>`;
+  const testBanner=battle.uiTest?'<div class="turn-order"><span>界面验收模式</span><div class="sheet-desc">此战斗不会结算剧情、奖励或写入存档。</div></div>':'';
+  return `<div class="modal"><section class="sheet"><div class="sheet-handle"></div><div class="battle-title"><div><div class="eyebrow">速度演算 · 回合制</div><h2>交锋</h2></div><span class="turn-pill">第 ${battle.round} 回合</span></div>${testBanner}${currentBanner}${orderBanner}<div class="combatants"><div class="side">${battle.allies.map(fighter).join('')}</div><div class="vs">VS</div><div class="side">${battle.enemies.map(fighter).join('')}</div></div><div class="battle-log">${battle.log.slice(-10).map(x=>`<div>· ${esc(x)}</div>`).join('')}</div>${controls}</section></div>`;
 }
 
 function render(){
@@ -179,8 +181,16 @@ function startEvent(eventId){
   }
 }
 
+function closeUiTestBattle(){
+  history.replaceState({},'',location.pathname);
+  battle=null;
+  render();
+  showToast('界面验收结束 · 未写入存档');
+}
+
 function finishBattle(){
   if(battle?.status!=='win') return;
+  if(battle.uiTest){ closeUiTestBattle(); return; }
   const eventId=battle.eventId;
   const result=eventId?completeEvent(state,eventId):{ok:false};
   if(result.ok && result.levels) state.logs.unshift(`阅历积累足够，你提升了 ${result.levels} 级。`);
@@ -191,6 +201,7 @@ function finishBattle(){
 }
 
 function leaveBattle(){
+  if(battle?.uiTest){ closeUiTestBattle(); return; }
   const eventId=battle?.eventId;
   if(eventId) failEvent(state,eventId);
   persist();
@@ -208,6 +219,18 @@ function handleBreakthrough(){
   showToast(`突破成功 · ${result.realm.name}`);
 }
 
+function initBattleUiTest(){
+  const params=new URLSearchParams(location.search);
+  if(params.get('battleTest')!=='1') return;
+  battle=createBattle(['guard','blackwuchang'],['player','chimeng'],state.martialArts,state);
+  battle.uiTest=true;
+  battle.log.unshift('【界面验收】模拟战斗已创建，不结算剧情与奖励。');
+  if(battle.allies[0]) battle.allies[0].statuses.push({id:'ui_shield',name:'护体',type:'shield',duration:2,source:'ui-test',stacks:1,amount:30});
+  if(battle.enemies[0]) battle.enemies[0].statuses.push({id:'ui_poison',name:'中毒',type:'poison',duration:3,source:'ui-test',stacks:2,potency:.04});
+  const current=getCurrentActor(battle);
+  if(current?.side==='ally') current.qi=Math.min(current.qi??0,10);
+}
+
 function bind(){
   document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>{view=b.dataset.nav; modal=null; render();});
   document.querySelectorAll('[data-location]').forEach(b=>b.onclick=()=>{modal=b.dataset.location; render();});
@@ -220,11 +243,12 @@ function bind(){
   document.querySelector('[data-action="rest"]')?.addEventListener('click',()=>{modal=null;render();showToast('已休整');});
   document.querySelector('[data-basic-attack]')?.addEventListener('click',()=>{battle=basicAttack(battle);render();});
   document.querySelectorAll('[data-skill]').forEach(b=>b.onclick=()=>{battle=useSkill(battle,b.dataset.skill);render();});
-  document.querySelector('[data-battle-finish]')?.addEventListener('click',finishBattle);
-  document.querySelector('[data-battle-leave]')?.addEventListener('click',leaveBattle);
+  document.querySelectorAll('[data-battle-finish]').forEach(b=>b.addEventListener('click',finishBattle));
+  document.querySelectorAll('[data-battle-leave]').forEach(b=>b.addEventListener('click',leaveBattle));
   document.querySelector('[data-reset]')?.addEventListener('click',()=>{if(confirm('确定清空当前本地存档？')){state=resetState();view='world';modal=null;battle=null;render();showToast('存档已重置');}});
 }
 
+initBattleUiTest();
 render();
 
 if ('serviceWorker' in navigator) {
