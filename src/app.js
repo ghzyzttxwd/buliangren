@@ -1,6 +1,17 @@
 import { CHARACTERS, SKILLS, LOCATIONS, ITEMS } from './data.js';
 import { loadState, saveState, resetState } from './state.js';
-import { createBattle, useSkill, basicAttack, getCurrentActor, canUseSkill, getSkillQiCost, BASIC_ATTACK_QI_RECOVERY } from './battle.js';
+import {
+  createBattle,
+  useSkill,
+  basicAttack,
+  getCurrentActor,
+  canUseSkill,
+  getSkillQiCost,
+  getSkillBlockReason,
+  getSkillMastery,
+  getMasteryPowerMultiplier,
+  BASIC_ATTACK_QI_RECOVERY
+} from './battle.js';
 import { buildPlayerCombatant } from './combatants.js';
 import {
   getRealmName,
@@ -122,14 +133,23 @@ function locationModal(id){
   return `<div class="modal" data-close><section class="sheet" data-sheet><div class="sheet-handle"></div><div class="eyebrow">地点 · 条件事件</div><h2>${loc.name}</h2><div class="sheet-desc">${loc.desc}</div><div class="option-stack">${body}${rest}<button class="secondary full" data-close-btn>返回江湖</button></div></section></div>`;
 }
 
+function battleStatusHtml(f){
+  const statuses=f.statuses||[];
+  if(!statuses.length) return '<div class="status-line"><span class="status-empty">无状态</span></div>';
+  return `<div class="status-line">${statuses.map(s=>`<span class="status-chip">${esc(s.name)}${s.stacks>1?`×${s.stacks}`:''} · ${s.duration}回${s.type==='shield'?` · 护${Math.max(0,s.amount||0)}`:''}</span>`).join('')}</div>`;
+}
+
 function battleModal(){
   const current=getCurrentActor(battle);
-  const fighter=(f)=>`<div class="fighter ${current===f&&battle.status==='active'?'current':''} ${f.hp<=0?'dead':''}"><div class="fighter-top"><b>${f.name}</b><small>血 ${Math.max(0,f.hp)}/${f.maxHp} · 内 ${Math.max(0,f.qi??0)}/${f.maxQi??0}</small></div><div class="hpbar"><span style="width:${pct(f.hp,f.maxHp)}%"></span></div></div>`;
+  const roundOrder=(battle.turnOrder||[]).filter(f=>f.hp>0).map(f=>`<span class="turn-order-unit ${current===f?'active':''}">${esc(f.name)}</span>`).join('<span class="turn-arrow">→</span>');
+  const fighter=(f)=>`<div class="fighter ${current===f&&battle.status==='active'?'current':''} ${f.hp<=0?'dead':''}"><div class="fighter-top"><b>${esc(f.name)}</b><span class="realm-chip">${getRealmName(f.realm)}</span></div><div class="fighter-vitals"><span>血 ${Math.max(0,f.hp)}/${f.maxHp}</span><span>内 ${Math.max(0,f.qi??0)}/${f.maxQi??0}</span></div><div class="hpbar"><span style="width:${pct(f.hp,f.maxHp)}%"></span></div>${battleStatusHtml(f)}</div>`;
   let controls='';
-  if(battle.status==='active' && current?.side==='ally') controls=`<div class="skill-buttons"><button class="skill-btn" data-basic-attack><b>普通攻击</b><small>威力 100% · 回复 ${BASIC_ATTACK_QI_RECOVERY} 内力</small></button>${current.skills.map(id=>{const s=SKILLS[id];const cost=getSkillQiCost(id);const usable=canUseSkill(current,id);return `<button class="skill-btn" data-skill="${id}" ${usable?'':'disabled'}><b>${s.name}</b><small>${usable?(s.heal?'恢复气血':`威力 ${Math.round(s.power*100)}%`):'内力不足'} · 消耗 ${cost}</small></button>`}).join('')}</div>`;
+  if(battle.status==='active' && current?.side==='ally') controls=`<div class="skill-buttons"><button class="skill-btn" data-basic-attack><b>普通攻击</b><small>威力 100% · 回复 ${BASIC_ATTACK_QI_RECOVERY} 内力</small></button>${current.skills.map(id=>{const s=SKILLS[id];const cost=getSkillQiCost(id);const block=getSkillBlockReason(current,id);const usable=canUseSkill(current,id);const mastery=getSkillMastery(current,id);const effectivePower=Math.round((s.power||1)*getMasteryPowerMultiplier(current,id)*100);const reason=block==='realm'?`境界不足 · 需${getRealmName(s.realmRequirement)}`:block==='qi'?'内力不足':block?'当前不可用':'';const effectText=s.heal?'恢复气血':`威力 ${effectivePower}%`;return `<button class="skill-btn" data-skill="${id}" ${usable?'':'disabled'}><b>${s.name}</b><small>${usable?effectText:reason} · 熟练 ${mastery} · 消耗 ${cost}</small></button>`}).join('')}</div>`;
   if(battle.status==='win') controls='<button class="primary full" data-battle-finish>领取战果</button>';
   if(battle.status==='lose') controls='<button class="secondary full" data-battle-leave>暂时撤退</button>';
-  return `<div class="modal"><section class="sheet"><div class="sheet-handle"></div><div class="battle-title"><div><div class="eyebrow">速度演算 · 回合制</div><h2>交锋</h2></div><span class="turn-pill">第 ${battle.round} 回合</span></div><div class="combatants"><div class="side">${battle.allies.map(fighter).join('')}</div><div class="vs">VS</div><div class="side">${battle.enemies.map(fighter).join('')}</div></div><div class="battle-log">${battle.log.slice(-8).map(x=>`<div>· ${esc(x)}</div>`).join('')}</div>${controls}</section></div>`;
+  const currentBanner=battle.status==='active'&&current?`<div class="current-actor-banner"><span>当前行动</span><b>${esc(current.name)}</b><small>${getRealmName(current.realm)} · 速度 ${current.speed}</small></div>`:'';
+  const orderBanner=battle.status==='active'?`<div class="turn-order"><span>本回合顺序</span><div>${roundOrder}</div></div>`:'';
+  return `<div class="modal"><section class="sheet"><div class="sheet-handle"></div><div class="battle-title"><div><div class="eyebrow">速度演算 · 回合制</div><h2>交锋</h2></div><span class="turn-pill">第 ${battle.round} 回合</span></div>${currentBanner}${orderBanner}<div class="combatants"><div class="side">${battle.allies.map(fighter).join('')}</div><div class="vs">VS</div><div class="side">${battle.enemies.map(fighter).join('')}</div></div><div class="battle-log">${battle.log.slice(-10).map(x=>`<div>· ${esc(x)}</div>`).join('')}</div>${controls}</section></div>`;
 }
 
 function render(){
