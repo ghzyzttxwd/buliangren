@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { defaultState, migrateSave, saveState } from '../src/state.js';
 import { checkCondition } from '../src/conditions.js';
+import { ITEM_CATALOG, ITEM_CATEGORIES, getItem } from '../src/data.js';
 
 const storage = new Map();
 globalThis.localStorage = {
@@ -95,4 +96,38 @@ assert.equal(negative.inventory.items.healing_powder, 0, 'negative existing item
 assert.equal(negative.inventory.items.broken_count, 0, 'negative custom item count was not clamped to zero');
 assert.equal(checkCondition({ type: 'hasItem', item: 'healing_powder' }, negative), false, 'zero-count item incorrectly satisfied hasItem');
 
-console.log('inventory smoke passed: default counts + equipment slots + normalize + hasItem + non-negative counts verified');
+// 阶段 B：统一物品目录必须使用稳定 item id，且 State 已有三件物品都能解析。
+for (const [id, item] of Object.entries(ITEM_CATALOG)) {
+  assert.equal(item.id, id, `catalog key/id mismatch for ${id}`);
+  assert.ok(item.name, `item name missing for ${id}`);
+  assert.ok(item.category, `item category missing for ${id}`);
+  assert.ok(item.description, `item description missing for ${id}`);
+  assert.equal(typeof item.stackable, 'boolean', `stackable flag missing for ${id}`);
+}
+for (const id of Object.keys(base.inventory.items)) {
+  assert.ok(getItem(id), `default inventory item ${id} is missing from item catalog`);
+}
+assert.equal(getItem('missing_item'), null, 'unknown item id should resolve to null');
+
+// 七类物品语义先固定枚举，具体秘籍/残卷等玩法留到阶段 G。
+assert.deepEqual(Object.values(ITEM_CATEGORIES), [
+  'equipment', 'consumable', 'manual', 'fragment', 'quest', 'treasure', 'material'
+], 'item category enum changed unexpectedly');
+
+// 现有物品必须具备与其类型相符的最小数据。
+const powder = getItem('healing_powder');
+assert.equal(powder.category, 'consumable', 'healing powder category changed');
+assert.ok(powder.useContext.includes('field') && powder.useContext.includes('battle'), 'consumable use contexts missing');
+assert.ok(Array.isArray(powder.effects) && powder.effects.length > 0, 'consumable effects missing');
+assert.equal(Object.hasOwn(powder, 'count'), false, 'catalog must not store current player-owned count');
+
+const coin = getItem('old_coin');
+assert.equal(coin.category, 'quest', 'old coin should be a quest item');
+assert.equal(coin.unique, true, 'old coin unique flag missing');
+
+const bracer = getItem('cloth_bracer');
+assert.equal(bracer.category, 'equipment', 'cloth bracer should be equipment');
+assert.equal(bracer.slot, 'accessory', 'cloth bracer slot changed');
+assert.deepEqual(bracer.statModifiers, { defense: 2 }, 'cloth bracer stat modifiers changed');
+
+console.log('inventory smoke passed: baseline + stable item catalog + categories + item type data verified');
