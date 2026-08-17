@@ -1,4 +1,4 @@
-import { CHARACTERS, SKILLS, LOCATIONS, ITEMS } from './data.js';
+import { CHARACTERS, SKILLS, LOCATIONS } from './data.js';
 import { loadState, saveState, resetState } from './state.js';
 import {
   createBattle,
@@ -13,6 +13,13 @@ import {
   BASIC_ATTACK_QI_RECOVERY
 } from './battle.js';
 import { buildPlayerCombatant } from './combatants.js';
+import {
+  getInventoryEntries,
+  getItemCategoryLabel,
+  getSlotLabel,
+  getUseContextLabel,
+  formatStatModifiers
+} from './inventory.js';
 import {
   getRealmName,
   getBreakthroughInfo,
@@ -120,7 +127,25 @@ function skillsView(){
   return `<main class="page"><div class="section-title"><h3>已掌握武学</h3><span>${owned.size} 门</span></div><section class="skill-list">${[...owned].map(id=>{const s=SKILLS[id];const mastery=state.martialArts[id]?.mastery||1;return `<article class="skill-card"><div class="skill-head"><span class="skill-name">${s.name}</span><span class="skill-type">${s.type}</span></div><p>${s.desc}</p><div class="skill-meta"><span>熟练 Lv.${mastery}</span><span>${s.heal?'治疗型':`威力 ${Math.round((s.power||1)*100)}%`} · 内力 ${getSkillQiCost(id)}</span></div></article>`}).join('')}</section></main>`;
 }
 
-function bagView(){ return `<main class="page"><div class="section-title"><h3>行囊</h3><span>基础行囊</span></div><section class="inventory-list">${ITEMS.map(i=>`<article class="item-card"><div class="skill-head"><b>${i.name}</b><span class="skill-type">×${i.count}</span></div><p>${i.desc}</p></article>`).join('')}</section></main>`; }
+function bagView(){
+  const entries=getInventoryEntries(state);
+  const total=entries.reduce((sum,item)=>sum+item.count,0);
+  const cards=entries.length?entries.map(item=>{
+    const meta=[getItemCategoryLabel(item.category)];
+    if(item.category==='equipment'){
+      meta.push(`部位：${getSlotLabel(item.slot)}`);
+      meta.push(item.equippedSlot?`已装备：${getSlotLabel(item.equippedSlot)}`:'未装备');
+      const stats=formatStatModifiers(item.statModifiers);
+      if(stats) meta.push(stats);
+    }
+    const useContext=getUseContextLabel(item);
+    if(useContext) meta.push(`${useContext}（阶段 F 启用操作）`);
+    if(item.category==='quest') meta.push('不可直接使用');
+    if(item.category==='unknown') meta.push('兼容旧存档保留');
+    return `<article class="item-card"><div class="item-head"><div class="item-title"><span class="skill-type">${esc(getItemCategoryLabel(item.category))}</span><b>${esc(item.name)}</b></div><span class="item-count">×${item.count}</span></div><p>${esc(item.description)}</p><div class="item-meta">${meta.slice(1).map(text=>`<span>${esc(text)}</span>`).join('')}</div></article>`;
+  }).join(''):'<article class="item-card item-empty"><b>行囊空空</b><p>当前没有持有任何物品。</p></article>';
+  return `<main class="page"><div class="section-title"><h3>行囊</h3><span>${entries.length} 类 · 共 ${total} 件</span></div><section class="inventory-list">${cards}</section></main>`;
+}
 
 function logsView(){ return `<main class="page"><div class="section-title"><h3>江湖记录</h3><span>自动存档</span></div><section class="log-list">${state.logs.map((x,i)=>`<article class="log-card"><b>${i===0?'最近':'记录'}</b><p>${esc(x)}</p></article>`).join('')}</section><section class="settings"><button class="danger full" data-reset>重置本地存档</button><div class="version">不良人：江湖行 · v${GAME_VERSION} · 存档结构 v${SAVE_VERSION}</div></section></main>`; }
 
