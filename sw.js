@@ -1,10 +1,11 @@
-const CACHE = 'buliangren-jianghuxing-v0.5.7-stable';
+const CACHE = 'buliangren-jianghuxing-v0.6.0';
 const ASSETS = [
   './',
   './index.html',
   './styles.css',
   './responsive.css',
   './world-map.css',
+  './ui-shell.css',
   './src/app.js',
   './src/data.js',
   './src/state.js',
