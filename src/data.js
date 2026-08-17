@@ -10,14 +10,14 @@ export const CHARACTERS = {
     skills: ['butterfly_dart', 'miao_heal']
   },
   nvdi: {
-    id: 'nvdi', name: '女帝', short: '岐', rarity: '幻音坊之主', level: 12,
-    maxHp: 188, attack: 39, defense: 18, speed: 21, c1: '#84514f', c2: '#2b171b',
-    skills: ['phantom_note', 'sky_slash']
+    id: 'nvdi', name:'女帝', short:'岐', rarity:'幻音坊之主', level:12,
+    maxHp:188, attack:39, defense:18, speed:21, c1:'#84514f', c2:'#2b171b',
+    skills:['phantom_note','sky_slash']
   },
   jiangchen: {
-    id: 'jiangchen', name: '降臣', short: '臣', rarity: '四大尸祖', level: 16,
-    maxHp: 215, attack: 46, defense: 21, speed: 16, c1: '#5d445f', c2: '#1e1724',
-    skills: ['corpse_thread', 'red_moon'], locked: true, unlock: '完成尸祖支线'
+    id:'jiangchen', name:'降臣', short:'臣', rarity:'四大尸祖', level:16,
+    maxHp:215, attack:46, defense:21, speed:16, c1:'#5d445f', c2:'#1e1724',
+    skills:['corpse_thread','red_moon'], locked:true, unlock:'完成尸祖支线'
   }
 };
 
@@ -76,18 +76,19 @@ export const ENEMIES = {
 
 const unlocked = (state, id) => state?.world?.unlockedLocations?.includes(id);
 
+// map.x / map.y 是纯 UI 百分比坐标。剧情解锁条件仍由 unlock 决定，CSS 不承载剧情逻辑。
 export const LOCATIONS = [
-  { id:'yuzhou', name:'渝州城', icon:'渝', desc:'暗流涌动的起点。玄冥教正在城外活动。', unlock:()=>true },
-  { id:'cangbing', name:'藏兵谷', icon:'藏', desc:'不良人旧部留下的隐秘据点。', unlock:(s)=>unlocked(s,'cangbing') },
-  { id:'xuanming', name:'玄冥教势力', icon:'冥', desc:'玄冥教在中原活动的外围势力范围，并非一处可随意闯入的总舵。', unlock:(s)=>unlocked(s,'xuanming') },
-  { id:'tongwenguan', name:'通文馆', icon:'文', desc:'晋地大势力通文馆所在。', unlock:(s)=>unlocked(s,'tongwenguan') },
-  { id:'qiguo', name:'岐国', icon:'岐', desc:'凤翔一带，幻音坊势力所在。', unlock:(s)=>unlocked(s,'qiguo') },
-  { id:'huanyinfang', name:'幻音坊', icon:'幻', desc:'女帝麾下在岐地经营的江湖势力与活动据点。', unlock:(s)=>unlocked(s,'huanyinfang') },
-  { id:'taiyuan', name:'太原', icon:'太', desc:'晋地重镇，群雄势力交错。', unlock:(s)=>unlocked(s,'taiyuan') },
-  { id:'raojiang', name:'娆疆', icon:'娆', desc:'万毒窟、蛊术与十万大山。', unlock:(s)=>unlocked(s,'raojiang') },
-  { id:'mobei', name:'漠北', icon:'漠', desc:'北地风沙漫天，强敌与异族势力盘踞。', unlock:(s)=>unlocked(s,'mobei') },
-  { id:'longquan', name:'龙泉秘地', icon:'龙', desc:'只在满足特殊条件后才会显露的秘密地点。', unlock:(s)=>unlocked(s,'longquan') },
-  { id:'luoyang', name:'洛阳', icon:'洛', desc:'大梁东都。第一季终局将指向焦兰殿。', unlock:(s)=>unlocked(s,'luoyang') }
+  { id:'yuzhou', name:'渝州城', icon:'渝', desc:'暗流涌动的起点。玄冥教正在城外活动。', map:{x:15,y:15,region:'巴蜀'}, unlock:()=>true },
+  { id:'cangbing', name:'藏兵谷', icon:'藏', desc:'不良人旧部留下的隐秘据点。', map:{x:47,y:12,region:'中原'}, unlock:(s)=>unlocked(s,'cangbing') },
+  { id:'xuanming', name:'玄冥教势力', icon:'冥', desc:'玄冥教在中原活动的外围势力范围，并非一处可随意闯入的总舵。', map:{x:81,y:18,region:'中原'}, unlock:(s)=>unlocked(s,'xuanming') },
+  { id:'tongwenguan', name:'通文馆', icon:'文', desc:'晋地大势力通文馆所在。', map:{x:19,y:39,region:'晋地'}, unlock:(s)=>unlocked(s,'tongwenguan') },
+  { id:'qiguo', name:'岐国', icon:'岐', desc:'凤翔一带，幻音坊势力所在。', map:{x:50,y:34,region:'岐地'}, unlock:(s)=>unlocked(s,'qiguo') },
+  { id:'huanyinfang', name:'幻音坊', icon:'幻', desc:'女帝麾下在岐地经营的江湖势力与活动据点。', map:{x:82,y:40,region:'岐地'}, unlock:(s)=>unlocked(s,'huanyinfang') },
+  { id:'taiyuan', name:'太原', icon:'太', desc:'晋地重镇，群雄势力交错。', map:{x:18,y:64,region:'晋地'}, unlock:(s)=>unlocked(s,'taiyuan') },
+  { id:'raojiang', name:'娆疆', icon:'娆', desc:'万毒窟、蛊术与十万大山。', map:{x:48,y:61,region:'西南'}, unlock:(s)=>unlocked(s,'raojiang') },
+  { id:'mobei', name:'漠北', icon:'漠', desc:'北地风沙漫天，强敌与异族势力盘踞。', map:{x:82,y:65,region:'北地'}, unlock:(s)=>unlocked(s,'mobei') },
+  { id:'longquan', name:'龙泉秘地', icon:'龙', desc:'只在满足特殊条件后才会显露的秘密地点。', map:{x:64,y:84,region:'秘地'}, unlock:(s)=>unlocked(s,'longquan') },
+  { id:'luoyang', name:'洛阳', icon:'洛', desc:'大梁东都。第一季终局将指向焦兰殿。', map:{x:25,y:85,region:'中原'}, unlock:(s)=>unlocked(s,'luoyang') }
 ];
 
 export const ITEM_CATEGORIES = Object.freeze({
