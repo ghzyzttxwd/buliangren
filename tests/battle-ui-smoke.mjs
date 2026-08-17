@@ -2,8 +2,10 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const app = fs.readFileSync('src/app.js', 'utf8');
+const enhancer = fs.readFileSync('src/battle-ui.js', 'utf8');
 const index = fs.readFileSync('index.html', 'utf8');
 const css = fs.readFileSync('battle-ui.css', 'utf8');
+const presentation = `${app}\n${enhancer}`;
 
 // v0.6 Stage F：只锁战斗呈现契约，不锁战斗演算结果。
 for (const marker of [
@@ -15,7 +17,7 @@ for (const marker of [
   'battle-log-panel',
   'battle-result'
 ]) {
-  assert.ok(app.includes(marker), `Stage F battle UI marker missing: ${marker}`);
+  assert.ok(presentation.includes(marker), `Stage F battle UI marker missing: ${marker}`);
 }
 
 // 当前行动、回合、行动顺序、敌我、生命/内力/境界、状态必须继续可见。
@@ -30,7 +32,7 @@ for (const marker of [
   'getRealmName(f.realm)',
   'battleStatusHtml(f)'
 ]) {
-  assert.ok(app.includes(marker), `battle information missing: ${marker}`);
+  assert.ok(presentation.includes(marker), `battle information missing: ${marker}`);
 }
 
 // 所有既有操作钩子必须保留。
@@ -50,6 +52,7 @@ for (const marker of ['getSkillBlockReason', 'canUseSkill', 'battle.log.slice'])
 }
 
 assert.ok(index.includes('href="./battle-ui.css"'), 'Stage F stylesheet must be loaded');
+assert.ok(index.includes('src="./src/battle-ui.js"'), 'Stage F enhancer must be loaded');
 assert.ok(css.includes('.battle-actions'), 'battle action area CSS missing');
 assert.ok(css.includes('.battle-field'), 'battle field CSS missing');
 assert.ok(!/\.battle-field[^}]*overflow-x\s*:\s*(auto|scroll)/s.test(css), 'battle field must not require horizontal scrolling');
