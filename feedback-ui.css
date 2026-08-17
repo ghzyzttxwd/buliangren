@@ -1,0 +1,110 @@
+/* v0.6 Stage G: records, settings, empty states and feedback. */
+.logs-page { min-width: 0; }
+
+.logs-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(255,255,255,.025);
+}
+
+.logs-summary > div {
+  min-width: 0;
+  padding: 9px 10px;
+  border-radius: 10px;
+  background: rgba(255,255,255,.035);
+}
+
+.logs-summary span {
+  display: block;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.logs-summary b {
+  display: block;
+  margin-top: 4px;
+  color: var(--ink-soft);
+  font-size: 10px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.log-list { gap: 8px; }
+.log-entry {
+  position: relative;
+  padding-left: 16px;
+}
+.log-entry::before {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 18px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--gold);
+  opacity: .72;
+}
+.log-entry b {
+  color: var(--gold-strong);
+  font-size: 10px;
+}
+
+.settings-panel {
+  margin-top: 18px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(255,255,255,.025);
+}
+
+.danger-zone {
+  border-color: rgba(202,90,90,.24);
+  background: rgba(202,90,90,.045);
+}
+
+.danger-note {
+  margin: 0 0 8px;
+  color: #d4a8a8;
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.empty-state {
+  border: 1px dashed rgba(255,255,255,.11);
+  background: rgba(255,255,255,.018);
+  text-align: center;
+}
+.empty-state b { color: var(--ink-soft); }
+.empty-state p { color: var(--muted); }
+.empty-state-action { opacity: .86; }
+
+.toast--success {
+  background: rgba(222,246,230,.98);
+  color: #173322;
+  border-color: rgba(90,177,125,.34);
+}
+.toast--error {
+  background: rgba(255,231,231,.98);
+  color: #4d1d1d;
+  border-color: rgba(202,90,90,.35);
+}
+.toast--info {
+  background: rgba(241,244,248,.98);
+  color: #11151c;
+}
+
+button[aria-disabled="true"] {
+  cursor: default;
+}
+
+@media (max-width: 360px) {
+  .logs-summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
