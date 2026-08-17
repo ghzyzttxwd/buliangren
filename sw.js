@@ -1,4 +1,4 @@
-const CACHE = 'buliangren-jianghuxing-v0.7.0';
+const CACHE = 'buliangren-jianghuxing-v0.7.1';
 const ASSETS = [
   './',
   './index.html',
@@ -7,6 +7,7 @@ const ASSETS = [
   './world-map.css',
   './ui-shell.css',
   './party-fix.css',
+  './portrait-art.css',
   './inventory-ui.css',
   './battle-ui.css',
   './feedback-ui.css',
@@ -15,6 +16,7 @@ const ASSETS = [
   './src/art.js',
   './src/battle-ui.js',
   './src/feedback-ui.js',
+  './src/portrait-ui.js',
   './src/data.js',
   './src/state.js',
   './src/inventory.js',
@@ -30,6 +32,9 @@ const ASSETS = [
   './src/events-s1-growth.js',
   './src/events-s1-balance.js',
   './src/version.js',
+  './assets/art/characters/portraits/player-portrait.webp',
+  './assets/art/characters/portraits/chimeng-portrait.webp',
+  './assets/art/characters/portraits/nvdi-portrait.webp',
   './manifest.webmanifest',
   './assets/icon.svg'
 ];
