@@ -1,4 +1,4 @@
-// v0.7 Stage A: centralized art registry.
+// v0.7 Stage A/B: centralized art registry.
 // UI may consume this registry, but gameplay/state must never depend on an image being available.
 
 export const ART_STATUS = Object.freeze({
@@ -24,17 +24,20 @@ export const ART_ASSETS = Object.freeze({
   'player-portrait': asset('player-portrait', 'portrait', {
     status: ART_STATUS.generateIfNeeded,
     fallback: { type: 'character-glyph', value: '侠' },
-    owner: 'player'
+    owner: 'player',
+    note: 'Stage B sourcing complete: legal free wuxia candidates were found, but none matched the project visual direction well enough for final use.'
   }),
   'chimeng-portrait': asset('chimeng-portrait', 'portrait', {
-    status: ART_STATUS.candidate,
+    status: ART_STATUS.generateIfNeeded,
     fallback: { type: 'character-glyph', value: '梦' },
-    owner: 'chimeng'
+    owner: 'chimeng',
+    note: 'Official promotional art is reference-only; no redistributable final portrait license was identified during Stage B sourcing.'
   }),
   'nvdi-portrait': asset('nvdi-portrait', 'portrait', {
-    status: ART_STATUS.candidate,
+    status: ART_STATUS.generateIfNeeded,
     fallback: { type: 'character-glyph', value: '岐' },
-    owner: 'nvdi'
+    owner: 'nvdi',
+    note: 'Official promotional art is reference-only; no redistributable final portrait license was identified during Stage B sourcing.'
   }),
   'jiangchen-portrait': asset('jiangchen-portrait', 'portrait', {
     status: ART_STATUS.deferred,
