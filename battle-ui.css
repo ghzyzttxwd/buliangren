@@ -1,0 +1,239 @@
+/* v0.6 Stage F: battle presentation hierarchy only. */
+.battle-sheet {
+  max-height: 94dvh;
+  padding-top: 14px;
+}
+
+.battle-header {
+  margin-bottom: 9px;
+}
+
+.battle-focus {
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 11px;
+  margin-bottom: 8px;
+  border: 1px solid rgba(239,200,116,.34);
+  border-radius: 13px;
+  background: linear-gradient(135deg, rgba(216,173,90,.12), rgba(216,173,90,.045));
+  box-shadow: 0 8px 24px rgba(216,173,90,.07);
+}
+
+.battle-focus b {
+  color: var(--gold-strong);
+  font-size: 13px;
+}
+
+.battle-focus small {
+  color: var(--ink-soft);
+  text-align: right;
+}
+
+.battle-order {
+  margin-bottom: 9px;
+  padding: 8px 9px;
+}
+
+.battle-field {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) 24px minmax(0,1fr);
+  gap: 6px;
+  align-items: stretch;
+  min-width: 0;
+  margin-bottom: 10px;
+}
+
+.battle-side {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  min-width: 0;
+}
+
+.battle-side-label {
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: .12em;
+  text-align: center;
+}
+
+.battle-side--ally .battle-side-label {
+  color: #8bc69f;
+}
+
+.battle-side--enemy .battle-side-label {
+  color: #d78686;
+}
+
+.battle-field .fighter {
+  min-width: 0;
+  padding: 9px;
+  border-radius: 12px;
+}
+
+.battle-field .fighter.current {
+  border-color: rgba(239,200,116,.62);
+  box-shadow: 0 0 0 1px rgba(239,200,116,.14) inset, 0 0 20px rgba(216,173,90,.09);
+}
+
+.battle-field .fighter-vitals {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.battle-field .fighter-vitals span {
+  min-width: 0;
+  color: var(--ink-soft);
+  font-size: 9px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.battle-field .status-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 7px;
+}
+
+.battle-field .status-chip,
+.battle-field .status-empty {
+  max-width: 100%;
+  font-size: 8px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.battle-actions {
+  margin: 2px 0 10px;
+  padding: 11px;
+  border: 1px solid rgba(239,200,116,.18);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(216,173,90,.055), rgba(255,255,255,.025));
+}
+
+.battle-actions-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.battle-actions-title span {
+  color: var(--gold-strong);
+  font-size: 10px;
+  letter-spacing: .08em;
+}
+
+.battle-actions-title b {
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.battle-actions .skill-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 7px;
+}
+
+.battle-actions .skill-btn {
+  min-width: 0;
+  min-height: 58px;
+  padding: 10px;
+  text-align: left;
+}
+
+.battle-actions .skill-btn b,
+.battle-actions .skill-btn small {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.battle-actions .skill-btn b {
+  color: var(--ink);
+  font-size: 11px;
+}
+
+.battle-actions .skill-btn small {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.battle-actions > .eyebrow {
+  margin: 10px 0 6px;
+}
+
+.battle-actions .primary,
+.battle-actions .secondary {
+  width: 100%;
+  margin-top: 0;
+}
+
+.battle-result {
+  border-color: rgba(90,177,125,.22);
+  background: linear-gradient(180deg, rgba(90,177,125,.07), rgba(255,255,255,.025));
+}
+
+.battle-log-panel {
+  max-height: 150px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(6,9,13,.46);
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.battle-log-title {
+  position: sticky;
+  top: -10px;
+  z-index: 1;
+  margin: -10px -10px 7px;
+  padding: 8px 10px 6px;
+  background: rgba(10,14,20,.96);
+  color: var(--ink-soft);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .08em;
+}
+
+@media (max-width: 380px) {
+  .battle-field {
+    grid-template-columns: minmax(0,1fr);
+    gap: 7px;
+  }
+
+  .battle-field .vs {
+    justify-self: center;
+    font-size: 9px;
+    opacity: .55;
+  }
+
+  .battle-side-label {
+    text-align: left;
+  }
+
+  .battle-actions .skill-buttons {
+    grid-template-columns: minmax(0,1fr);
+  }
+
+  .battle-focus {
+    grid-template-columns: auto minmax(0,1fr);
+  }
+
+  .battle-focus small {
+    grid-column: 1 / -1;
+    text-align: left;
+  }
+}
