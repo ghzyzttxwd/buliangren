@@ -118,6 +118,12 @@ function nav(){
   return `<nav class="bottom-nav">${items.map(([id,ico,label])=>`<button class="nav-btn ${view===id?'active':''}" data-nav="${id}"><span class="ico">${ico}</span><span>${label}</span></button>`).join('')}</nav>`;
 }
 
+const LOCATION_STATE_CLASS={
+  locked:'location--locked',
+  open:'location--open',
+  event:'location--event'
+};
+
 function worldView(){
   const objective = currentObjectiveEvent();
   const meta = chapterMeta();
@@ -126,26 +132,52 @@ function worldView(){
   const nextRealm = breakthrough.next;
   const expNeed = expRequiredForNextLevel(state.player.level);
   const targetLocation = objective ? LOCATIONS.find(loc=>loc.id===objective.location) : null;
-  const objectiveCard = objective
-    ? `<section class="quest-card"><span class="tag">${categoryLabel(objective.category)}</span><h4>${objective.title}</h4><p>${objective.desc}</p><button class="primary full" data-quest="${objective.location}">前往${targetLocation?.name || '事发地点'}</button></section>`
+  const unlockedCount=LOCATIONS.filter(loc=>loc.unlock(state)).length;
+  const overviewMode=seasonComplete?'complete':objective?'active':'free';
+  const overviewLabel=seasonComplete?'第一季已完成':objective?categoryLabel(objective.category):'自由活动';
+  const overviewTitle=seasonComplete?'江湖未止 · 自由行走':objective?objective.title:meta.title;
+  const overviewDesc=seasonComplete
+    ? '第一季主线已经结束，没有强制主线。你可以继续处理尚未完成的支线、人物事件、奇遇和武学成长。'
+    : objective
+      ? objective.desc
+      : '当前没有必须立刻处理的主线。可以练功、探索已解锁地点，等待新的江湖线索出现。';
+  const nextAction=objective
+    ? `<div class="world-next-action"><div><span>下一步</span><b>前往${esc(targetLocation?.name || '事发地点')}</b><small>${esc(objective.title)}</small></div><button class="primary" data-quest="${esc(objective.location)}">前往</button></div>`
     : seasonComplete
-      ? `<section class="quest-card"><span class="tag">第一季完成</span><h4>江湖未止</h4><p>第一季主线已经结束。你仍可处理尚未完成的支线、奇遇、人物事件与武学成长；第二季正式内容尚未开始。</p></section>`
-      : `<section class="quest-card"><span class="tag">自由活动</span><h4>暂无强制目标</h4><p>当前主线条件尚未满足，或本阶段正式内容已经完成。可继续练功、处理支线与奇遇，江湖声望和经历会让新的线索出现。</p></section>`;
-  const heroTitle = objective ? objective.title : seasonComplete ? '第一季终 · 江湖未止' : meta.title;
-  const heroDesc = objective ? objective.desc : seasonComplete
-    ? '焦兰殿风波已经落幕，李星云仍选择浪迹江湖。你的第一季经历已经写入江湖记录。'
-    : '眼下没有必须立刻处理的主线。继续在江湖活动，新的线索会在条件成熟后出现。';
-  return `<main class="page">
-    <section class="hero-banner"><div class="eyebrow">${meta.eyebrow}</div><h2>${heroTitle}</h2><p>${heroDesc}</p><div class="progress-line"><span style="width:${meta.progress}%"></span></div></section>
+      ? `<div class="world-next-action world-next-action--quiet"><div><span>当前状态</span><b>无强制主线</b><small>从下方地图选择已解锁地点继续江湖活动。</small></div></div>`
+      : `<div class="world-next-action world-next-action--quiet"><div><span>下一步</span><b>自由探索</b><small>从有事件的地点开始，或继续积累修为与声望。</small></div></div>`;
+  const cultivationText=nextRealm?`${state.player.cultivation}/${nextRealm.cultivationRequired}`:`${state.player.cultivation}`;
+  const growthNote=nextRealm
+    ? breakthrough.canBreakthrough?`可突破至${nextRealm.name}`:`距${nextRealm.name}还差 ${breakthrough.remaining} 修为`
+    : '已至当前版本最高境界';
+  const nodes=LOCATIONS.map(loc=>{
+    const unlocked=loc.unlock(state);
+    const count=unlocked?getAvailableEvents(state,loc.id).length:0;
+    const status=!unlocked?'locked':count>0?'event':'open';
+    const stateLabel=status==='event'?`${count}事`:status==='open'?'可进':'未解锁';
+    return `<button class="location ${LOCATION_STATE_CLASS[status]}" data-location="${esc(loc.id)}" style="--map-x:${loc.map.x}%;--map-y:${loc.map.y}%" aria-label="${esc(loc.name)} · ${stateLabel}" ${unlocked?'':'disabled'}><span class="loc-icon">${esc(loc.icon)}</span><span class="loc-copy"><b>${esc(loc.name)}</b><small>${esc(loc.map.region || '')}</small></span><span class="loc-state">${stateLabel}</span></button>`;
+  }).join('');
+  return `<main class="page world-page">
+    <section class="world-overview world-overview--${overviewMode}">
+      <div class="world-overview__head"><div><div class="eyebrow">${esc(meta.eyebrow)}</div><span class="world-mode-chip">${esc(overviewLabel)}</span></div><strong>${meta.progress}%</strong></div>
+      <h2>${esc(overviewTitle)}</h2>
+      <p>${esc(overviewDesc)}</p>
+      <div class="progress-line"><span style="width:${meta.progress}%"></span></div>
+      ${nextAction}
+    </section>
 
-    <div class="section-title"><h3>江湖身份</h3><span>${getReputationRank(state.world.reputation)}</span></div>
-    <section class="quest-card"><span class="tag">成长</span><h4>${getRealmName(state.player.realm)} · 修为 ${state.player.cultivation}${nextRealm?` / ${nextRealm.cultivationRequired}`:''}</h4><p>阅历 ${state.player.exp} / ${expNeed}。${nextRealm?`下一境：${nextRealm.name}${breakthrough.canBreakthrough?'，当前可以突破。':`，还差 ${breakthrough.remaining} 修为。`}`:'已至当前版本最高境界。'}</p>${breakthrough.canBreakthrough?'<button class="primary full" data-breakthrough>尝试突破</button>':''}</section>
+    <section class="world-growth-summary">
+      <div><span>境界</span><b>${esc(getRealmName(state.player.realm))}</b></div>
+      <div><span>修为</span><b>${esc(cultivationText)}</b></div>
+      <div><span>阅历</span><b>${state.player.exp}/${expNeed}</b></div>
+      <div><span>江湖</span><b>${esc(getReputationRank(state.world.reputation))}</b></div>
+      <p>${esc(growthNote)}</p>
+      ${breakthrough.canBreakthrough?'<button class="primary" data-breakthrough>尝试突破</button>':''}
+    </section>
 
-    <div class="section-title"><h3>当前任务</h3><span>声望 ${state.world.reputation} · ${getRealmName(state.player.realm)}</span></div>
-    ${objectiveCard}
-
-    <div class="section-title"><h3>江湖地点</h3><span>${LOCATIONS.filter(x=>x.unlock(state)).length} / ${LOCATIONS.length} 已解锁</span></div>
-    <section class="location-list">${LOCATIONS.map(loc=>{const unlocked=loc.unlock(state);const count=unlocked?getAvailableEvents(state,loc.id).length:0;return `<button class="location" data-location="${loc.id}" ${unlocked?'':'disabled'}><span class="loc-icon">${loc.icon}</span><span class="loc-copy"><b>${loc.name}</b><small>${loc.desc}${unlocked?` · ${count} 个可用事件`:' · 尚未解锁'}</small></span><span class="chev">›</span></button>`}).join('')}</section>
+    <div class="section-title world-map-title"><h3>江湖地图</h3><span>${unlockedCount} / ${LOCATIONS.length} 已解锁</span></div>
+    <div class="map-legend"><span><i class="legend-dot legend-dot--event"></i>有事件</span><span><i class="legend-dot legend-dot--open"></i>可进入</span><span><i class="legend-dot legend-dot--locked"></i>未解锁</span></div>
+    <section class="location-list" aria-label="江湖地点地图"><div class="map-route map-route--one"></div><div class="map-route map-route--two"></div>${nodes}</section>
   </main>`;
 }
 
