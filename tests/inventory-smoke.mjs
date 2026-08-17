@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { defaultState, migrateSave, saveState } from '../src/state.js';
+import { defaultState, migrateSave, saveState, loadState } from '../src/state.js';
 import { checkCondition } from '../src/conditions.js';
 import { ITEM_CATALOG, ITEM_CATEGORIES, getItem } from '../src/data.js';
 import {
@@ -7,7 +7,9 @@ import {
   getItemCategoryLabel,
   getSlotLabel,
   getUseContextLabel,
-  formatStatModifiers
+  formatStatModifiers,
+  equipItem,
+  unequipItem
 } from '../src/inventory.js';
 
 const storage = new Map();
@@ -165,4 +167,70 @@ assert.equal(getSlotLabel('accessory'), '饰品', 'slot label mismatch');
 assert.equal(getUseContextLabel(powder), '可用于：战斗外、战斗中', 'use context label mismatch');
 assert.equal(formatStatModifiers(bracer.statModifiers), '防御 +2', 'equipment stat text mismatch');
 
-console.log('inventory smoke passed: baseline + catalog + real state-driven inventory view verified');
+// 阶段 D：装备/卸下规则必须只改变 equipment 槽位，不改变物品所有权数量。
+const equipmentState = migrateSave({
+  ...base,
+  inventory: {
+    items: {
+      healing_powder: 3,
+      old_coin: 1,
+      cloth_bracer: 1
+    },
+    equipment: {
+      weapon: null,
+      armor: null,
+      accessory: 'legacy_charm'
+    }
+  }
+});
+const ownedBeforeEquip = { ...equipmentState.inventory.items };
+
+let equipmentResult = equipItem(equipmentState, 'healing_powder');
+assert.equal(equipmentResult.ok, false, 'non-equipment item was allowed into equipment');
+assert.equal(equipmentResult.reason, 'not_equipment', 'non-equipment rejection reason mismatch');
+assert.equal(equipmentState.inventory.equipment.accessory, 'legacy_charm', 'failed equip changed existing slot');
+
+equipmentResult = equipItem(equipmentState, 'cloth_bracer', 'weapon');
+assert.equal(equipmentResult.ok, false, 'slot mismatch was allowed');
+assert.equal(equipmentResult.reason, 'slot_mismatch', 'slot mismatch rejection reason mismatch');
+assert.equal(equipmentState.inventory.equipment.accessory, 'legacy_charm', 'slot mismatch changed existing slot');
+
+const unownedEquipmentState = migrateSave({
+  ...base,
+  inventory: {
+    items: {
+      healing_powder: 3,
+      old_coin: 1,
+      cloth_bracer: 0
+    },
+    equipment: {
+      weapon: null,
+      armor: null,
+      accessory: null
+    }
+  }
+});
+equipmentResult = equipItem(unownedEquipmentState, 'cloth_bracer', 'accessory');
+assert.equal(equipmentResult.ok, false, 'unowned equipment was allowed to equip');
+assert.equal(equipmentResult.reason, 'not_owned', 'unowned equipment rejection reason mismatch');
+
+equipmentResult = equipItem(equipmentState, 'cloth_bracer', 'accessory');
+assert.equal(equipmentResult.ok, true, 'owned equipment could not be equipped');
+assert.equal(equipmentResult.replacedItemId, 'legacy_charm', 'same-slot replacement did not report previous equipment');
+assert.equal(equipmentState.inventory.equipment.accessory, 'cloth_bracer', 'accessory slot did not record equipped item id');
+assert.deepEqual(equipmentState.inventory.items, ownedBeforeEquip, 'equipping changed item ownership counts');
+
+const persistedEquipment = saveState(equipmentState);
+assert.equal(persistedEquipment.inventory.equipment.accessory, 'cloth_bracer', 'saveState dropped equipped accessory');
+const reopenedEquipment = loadState();
+assert.equal(reopenedEquipment.inventory.equipment.accessory, 'cloth_bracer', 'reopened save lost equipped accessory');
+assert.equal(reopenedEquipment.inventory.items.cloth_bracer, 1, 'reopened save changed equipped item ownership count');
+
+const unequipResult = unequipItem(reopenedEquipment, 'accessory');
+assert.equal(unequipResult.ok, true, 'equipped accessory could not be unequipped');
+assert.equal(unequipResult.itemId, 'cloth_bracer', 'unequip returned wrong item id');
+assert.equal(reopenedEquipment.inventory.equipment.accessory, null, 'unequip did not clear accessory slot');
+assert.equal(reopenedEquipment.inventory.items.cloth_bracer, 1, 'unequip changed item ownership count');
+assert.equal(unequipItem(reopenedEquipment, 'accessory').reason, 'empty_slot', 'empty slot should not unequip twice');
+
+console.log('inventory smoke passed: baseline + catalog + real inventory + equipment rules verified');
