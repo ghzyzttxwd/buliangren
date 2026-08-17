@@ -1,5 +1,6 @@
 import { SKILLS } from './data.js';
 import { buildPlayerCombatant, buildCompanionCombatant, buildEnemyCombatant } from './combatants.js';
+import { useConsumableItem, formatItemUseChanges } from './inventory.js';
 import { getRealm } from './progression.js';
 import { applyStatus, absorbShield, getControlStatus, resolveTurnEndStatuses } from './statuses.js';
 
@@ -370,4 +371,19 @@ export function useSkill(battle, skillId) {
   applySkillAction(battle, actor, skillId);
   if (battle.status !== 'active') return battle;
   return finishAllyAction(battle, actor);
+}
+
+export function useBattleItem(battle, state, itemId) {
+  if (battle?.status !== 'active') return { battle, result: { ok: false, reason: 'battle_inactive' } };
+  const actor = getCurrentActor(battle);
+  if (!actor || actor.side !== 'ally' || !alive(actor)) {
+    return { battle, result: { ok: false, reason: 'invalid_actor' } };
+  }
+
+  const result = useConsumableItem(state, itemId, 'battle', actor);
+  if (!result.ok) return { battle, result };
+
+  const changeText = formatItemUseChanges(result.changes);
+  battle.log.push(`${actor.name}使用【${result.item.name}】${changeText ? `，${changeText}` : ''}。`);
+  return { battle: finishAllyAction(battle, actor), result };
 }
