@@ -12,12 +12,12 @@ export const MERCHANTS = Object.freeze({
   })
 });
 
-export function getMerchant(merchantId) {
-  return MERCHANTS[merchantId] || null;
+export function getMerchant(merchantId, merchantCatalog = MERCHANTS) {
+  return merchantCatalog?.[merchantId] || null;
 }
 
-export function getMerchantItems(merchantId, itemCatalog = ITEM_CATALOG) {
-  const merchant = getMerchant(merchantId);
+export function getMerchantItems(merchantId, itemCatalog = ITEM_CATALOG, merchantCatalog = MERCHANTS) {
+  const merchant = getMerchant(merchantId, merchantCatalog);
   if (!merchant) return [];
   return merchant.items
     .map(listing => {
@@ -29,8 +29,8 @@ export function getMerchantItems(merchantId, itemCatalog = ITEM_CATALOG) {
     .filter(Boolean);
 }
 
-export function canPurchaseItem(state, merchantId, itemId, quantity = 1, itemCatalog = ITEM_CATALOG) {
-  const merchant = getMerchant(merchantId);
+export function canPurchaseItem(state, merchantId, itemId, quantity = 1, itemCatalog = ITEM_CATALOG, merchantCatalog = MERCHANTS) {
+  const merchant = getMerchant(merchantId, merchantCatalog);
   if (!merchant) return { ok: false, reason: 'merchant_missing' };
 
   const listing = merchant.items.find(entry => entry.itemId === itemId);
@@ -53,8 +53,8 @@ export function canPurchaseItem(state, merchantId, itemId, quantity = 1, itemCat
   return { ok: true, merchant, item, itemId, count, unitPrice, totalPrice, silver };
 }
 
-export function purchaseItem(state, merchantId, itemId, quantity = 1, itemCatalog = ITEM_CATALOG) {
-  const check = canPurchaseItem(state, merchantId, itemId, quantity, itemCatalog);
+export function purchaseItem(state, merchantId, itemId, quantity = 1, itemCatalog = ITEM_CATALOG, merchantCatalog = MERCHANTS) {
+  const check = canPurchaseItem(state, merchantId, itemId, quantity, itemCatalog, merchantCatalog);
   if (!check.ok) return check;
 
   if (!state.inventory || typeof state.inventory !== 'object') state.inventory = { items: {}, equipment: {} };
