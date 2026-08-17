@@ -22,22 +22,25 @@ const asset = (id, kind, options = {}) => Object.freeze({
 export const ART_ASSETS = Object.freeze({
   // Character portraits
   'player-portrait': asset('player-portrait', 'portrait', {
-    status: ART_STATUS.generateIfNeeded,
+    status: ART_STATUS.ready,
+    localPath: 'assets/art/characters/portraits/player-portrait.webp',
     fallback: { type: 'character-glyph', value: '侠' },
     owner: 'player',
-    note: 'Stage B sourcing complete: legal free wuxia candidates were found, but none matched the project visual direction well enough for final use.'
+    note: 'Generated for the project from the approved original protagonist specification and supplied by the user in Stage B.'
   }),
   'chimeng-portrait': asset('chimeng-portrait', 'portrait', {
-    status: ART_STATUS.generateIfNeeded,
+    status: ART_STATUS.ready,
+    localPath: 'assets/art/characters/portraits/chimeng-portrait.webp',
     fallback: { type: 'character-glyph', value: '梦' },
     owner: 'chimeng',
-    note: 'Official promotional art is reference-only; no redistributable final portrait license was identified during Stage B sourcing.'
+    note: 'Generated for the project from approved Chimeng visual references and supplied by the user in Stage B.'
   }),
   'nvdi-portrait': asset('nvdi-portrait', 'portrait', {
-    status: ART_STATUS.generateIfNeeded,
+    status: ART_STATUS.ready,
+    localPath: 'assets/art/characters/portraits/nvdi-portrait.webp',
     fallback: { type: 'character-glyph', value: '岐' },
     owner: 'nvdi',
-    note: 'Official promotional art is reference-only; no redistributable final portrait license was identified during Stage B sourcing.'
+    note: 'Generated for the project from approved Nvdi visual references and supplied by the user in Stage B.'
   }),
   'jiangchen-portrait': asset('jiangchen-portrait', 'portrait', {
     status: ART_STATUS.deferred,
