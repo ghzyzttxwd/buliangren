@@ -33,6 +33,12 @@ const USE_CONTEXT_LABELS = Object.freeze({
   battle: '战斗中'
 });
 
+const ITEM_CHANGE_LABELS = Object.freeze({
+  hp: '气血',
+  qi: '内力',
+  stamina: '体力'
+});
+
 export function getItemCategoryLabel(category) {
   return CATEGORY_LABELS[category] || CATEGORY_LABELS.unknown;
 }
@@ -96,6 +102,112 @@ export function getEquipmentStatModifiers(state, itemCatalog = ITEM_CATALOG) {
   }
 
   return totals;
+}
+
+function contextEffects(item, context) {
+  return (Array.isArray(item?.effects) ? item.effects : []).filter(effect => {
+    return !Array.isArray(effect.contexts) || effect.contexts.includes(context);
+  });
+}
+
+function previewEffect(effect, state, target) {
+  if (!effect || typeof effect.type !== 'string') return false;
+
+  if (effect.type === 'restoreHpRatio') {
+    return Boolean(target && Number.isFinite(target.hp) && Number.isFinite(target.maxHp) && target.maxHp > 0 && target.hp < target.maxHp);
+  }
+
+  if (effect.type === 'restoreQiRatio') {
+    return Boolean(target && Number.isFinite(target.qi) && Number.isFinite(target.maxQi) && target.maxQi > 0 && target.qi < target.maxQi);
+  }
+
+  if (effect.type === 'restoreStamina') {
+    const player = state?.player;
+    return Boolean(player && Number.isFinite(player.stamina) && Number.isFinite(player.maxStamina) && player.stamina < player.maxStamina);
+  }
+
+  return false;
+}
+
+function applyEffect(effect, state, target) {
+  if (effect.type === 'restoreHpRatio') {
+    const maxHp = Math.max(1, target.maxHp);
+    const amount = Math.max(1, Math.round(maxHp * Math.max(0, effect.value || 0)));
+    const actual = Math.min(amount, Math.max(0, maxHp - target.hp));
+    target.hp += actual;
+    return actual > 0 ? { type: 'hp', amount: actual } : null;
+  }
+
+  if (effect.type === 'restoreQiRatio') {
+    const maxQi = Math.max(0, target.maxQi);
+    const amount = Math.max(1, Math.round(maxQi * Math.max(0, effect.value || 0)));
+    const actual = Math.min(amount, Math.max(0, maxQi - target.qi));
+    target.qi += actual;
+    return actual > 0 ? { type: 'qi', amount: actual } : null;
+  }
+
+  if (effect.type === 'restoreStamina') {
+    const player = state.player;
+    const amount = Math.max(0, Math.round(effect.value || 0));
+    const actual = Math.min(amount, Math.max(0, player.maxStamina - player.stamina));
+    player.stamina += actual;
+    return actual > 0 ? { type: 'stamina', amount: actual } : null;
+  }
+
+  return null;
+}
+
+export function canUseConsumableItem(state, itemId, context, target = null) {
+  const inventory = state?.inventory;
+  if (!inventory?.items) return { ok: false, reason: 'invalid_state' };
+
+  const item = ITEM_CATALOG[itemId];
+  if (!item || item.category !== 'consumable') return { ok: false, reason: 'not_consumable' };
+
+  const count = inventory.items[itemId];
+  if (!Number.isFinite(count) || count <= 0) return { ok: false, reason: 'empty' };
+
+  if (!Array.isArray(item.useContext) || !item.useContext.includes(context)) {
+    return { ok: false, reason: 'wrong_context', item, count };
+  }
+
+  const effects = contextEffects(item, context);
+  if (!effects.length) return { ok: false, reason: 'no_effect', item, count };
+  if (!effects.some(effect => previewEffect(effect, state, target))) {
+    return { ok: false, reason: 'no_effect', item, count, effects };
+  }
+
+  return { ok: true, item, itemId, context, count, effects };
+}
+
+export function useConsumableItem(state, itemId, context, target = null) {
+  const check = canUseConsumableItem(state, itemId, context, target);
+  if (!check.ok) return check;
+
+  const changes = check.effects
+    .map(effect => applyEffect(effect, state, target))
+    .filter(Boolean);
+
+  if (!changes.length) return { ...check, ok: false, reason: 'no_effect' };
+
+  const before = state.inventory.items[itemId];
+  state.inventory.items[itemId] = Math.max(0, before - 1);
+
+  return {
+    ok: true,
+    item: check.item,
+    itemId,
+    context,
+    changes,
+    remaining: state.inventory.items[itemId]
+  };
+}
+
+export function formatItemUseChanges(changes = []) {
+  return changes
+    .filter(change => Number.isFinite(change?.amount) && change.amount > 0)
+    .map(change => `${ITEM_CHANGE_LABELS[change.type] || change.type} +${change.amount}`)
+    .join(' · ');
 }
 
 export function formatStatModifiers(modifiers = {}) {
