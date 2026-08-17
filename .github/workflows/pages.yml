@@ -32,6 +32,8 @@ jobs:
           node -e "JSON.parse(require('fs').readFileSync('manifest.webmanifest', 'utf8'))"
       - name: Smoke test UI baseline
         run: node --experimental-default-type=module tests/ui-smoke.mjs
+      - name: Smoke test world map UX
+        run: node --experimental-default-type=module tests/world-map-ui-smoke.mjs
       - name: Smoke test v0.5 inventory regression
         run: node --experimental-default-type=module tests/v05-inventory-regression.mjs
       - name: Smoke test battle baseline
