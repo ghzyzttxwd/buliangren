@@ -30,20 +30,8 @@ jobs:
             node --check "$file"
           done
           node -e "JSON.parse(require('fs').readFileSync('manifest.webmanifest', 'utf8'))"
-      - name: Smoke test UI baseline
-        run: node --experimental-default-type=module tests/ui-smoke.mjs
-      - name: Smoke test world map UX
-        run: node --experimental-default-type=module tests/world-map-ui-smoke.mjs
-      - name: Smoke test party and skills UX
-        run: node --experimental-default-type=module tests/party-skills-ui-smoke.mjs
-      - name: Smoke test inventory and shop UX
-        run: node --experimental-default-type=module tests/inventory-shop-ui-smoke.mjs
-      - name: Smoke test battle UX
-        run: node --experimental-default-type=module tests/battle-ui-smoke.mjs
-      - name: Smoke test feedback and empty states UX
-        run: node --experimental-default-type=module tests/feedback-ui-smoke.mjs
-      - name: Smoke test mobile responsive UX
-        run: node --experimental-default-type=module tests/mobile-responsive-smoke.mjs
+      - name: Smoke test v0.6 UI regression
+        run: node --experimental-default-type=module tests/v06-ui-regression.mjs
       - name: Smoke test v0.5 inventory regression
         run: node --experimental-default-type=module tests/v05-inventory-regression.mjs
       - name: Smoke test battle baseline
