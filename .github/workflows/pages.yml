@@ -30,6 +30,8 @@ jobs:
             node --check "$file"
           done
           node -e "JSON.parse(require('fs').readFileSync('manifest.webmanifest', 'utf8'))"
+      - name: Smoke test inventory baseline
+        run: node --experimental-default-type=module tests/inventory-smoke.mjs
       - name: Smoke test battle baseline
         run: node --experimental-default-type=module tests/battle-smoke.mjs
       - name: Smoke test season one from new save
