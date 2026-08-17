@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { defaultState, migrateSave, saveState, loadState } from '../src/state.js';
 import { checkCondition } from '../src/conditions.js';
 import { ITEM_CATALOG, ITEM_CATEGORIES, getItem } from '../src/data.js';
+import { buildPlayerCombatant } from '../src/combatants.js';
+import { getInitiative } from '../src/battle.js';
 import {
   getInventoryEntries,
   getItemCategoryLabel,
@@ -9,7 +11,8 @@ import {
   getUseContextLabel,
   formatStatModifiers,
   equipItem,
-  unequipItem
+  unequipItem,
+  getEquipmentStatModifiers
 } from '../src/inventory.js';
 
 const storage = new Map();
@@ -233,4 +236,81 @@ assert.equal(reopenedEquipment.inventory.equipment.accessory, null, 'unequip did
 assert.equal(reopenedEquipment.inventory.items.cloth_bracer, 1, 'unequip changed item ownership count');
 assert.equal(unequipItem(reopenedEquipment, 'accessory').reason, 'empty_slot', 'empty slot should not unequip twice');
 
-console.log('inventory smoke passed: baseline + catalog + real inventory + equipment rules verified');
+// 阶段 E：装备属性必须通过 buildPlayerCombatant 进入战斗，不改写 battle 核心。
+const nakedState = migrateSave({
+  ...base,
+  inventory: {
+    items: { ...base.inventory.items },
+    equipment: { weapon: null, armor: null, accessory: null }
+  }
+});
+const nakedCombatant = buildPlayerCombatant(nakedState, nakedState.martialArts);
+
+const bracerState = migrateSave({
+  ...base,
+  inventory: {
+    items: { ...base.inventory.items },
+    equipment: { weapon: null, armor: null, accessory: 'cloth_bracer' }
+  }
+});
+const bracerModifiers = getEquipmentStatModifiers(bracerState);
+assert.deepEqual(bracerModifiers, { attack: 0, defense: 2, speed: 0, maxHp: 0, maxQi: 0 }, 'real equipment modifiers were not collected correctly');
+const bracerCombatant = buildPlayerCombatant(bracerState, bracerState.martialArts);
+assert.equal(bracerCombatant.defense, nakedCombatant.defense + 2, 'equipped cloth bracer did not increase combat defense');
+
+unequipItem(bracerState, 'accessory');
+const restoredCombatant = buildPlayerCombatant(bracerState, bracerState.martialArts);
+assert.equal(restoredCombatant.defense, nakedCombatant.defense, 'unequipping did not restore original combat defense');
+
+// 用测试目录验证五类基础修正的通用管线，不向正式物品目录塞无意义测试装备。
+const fixtureCatalog = {
+  test_blade: {
+    id: 'test_blade', category: 'equipment', slot: 'weapon',
+    statModifiers: { attack: 5, speed: 20 }
+  },
+  test_armor: {
+    id: 'test_armor', category: 'equipment', slot: 'armor',
+    statModifiers: { defense: 3, maxHp: 40 }
+  },
+  test_charm: {
+    id: 'test_charm', category: 'equipment', slot: 'accessory',
+    statModifiers: { maxQi: 30 }
+  }
+};
+const fixtureState = {
+  ...base,
+  inventory: {
+    items: { test_blade: 1, test_armor: 1, test_charm: 1 },
+    equipment: { weapon: 'test_blade', armor: 'test_armor', accessory: 'test_charm' }
+  }
+};
+const fixtureModifiers = getEquipmentStatModifiers(fixtureState, fixtureCatalog);
+assert.deepEqual(fixtureModifiers, { attack: 5, defense: 3, speed: 20, maxHp: 40, maxQi: 30 }, 'generic equipment stat aggregation mismatch');
+const fixtureCombatant = buildPlayerCombatant(fixtureState, fixtureState.martialArts, fixtureCatalog);
+assert.equal(fixtureCombatant.attack, nakedCombatant.attack + 5, 'attack equipment did not change combat attack');
+assert.equal(fixtureCombatant.defense, nakedCombatant.defense + 3, 'defense equipment did not change combat defense');
+assert.equal(fixtureCombatant.speed, nakedCombatant.speed + 20, 'speed equipment did not change combat speed');
+assert.equal(fixtureCombatant.maxHp, nakedCombatant.maxHp + 40, 'HP equipment did not change combat max HP');
+assert.equal(fixtureCombatant.hp, fixtureCombatant.maxHp, 'combat HP did not initialize at equipment-adjusted max HP');
+assert.equal(fixtureCombatant.maxQi, nakedCombatant.maxQi + 30, 'Qi equipment did not change combat max Qi');
+assert.equal(fixtureCombatant.qi, fixtureCombatant.maxQi, 'combat Qi did not initialize at equipment-adjusted max Qi');
+
+const orderGate = { speed: nakedCombatant.speed + 10, realmOrder: nakedCombatant.realmOrder };
+assert.ok(getInitiative(nakedCombatant) < getInitiative(orderGate), 'initiative fixture must start ahead of naked player');
+assert.ok(getInitiative(fixtureCombatant) > getInitiative(orderGate), 'speed equipment did not change initiative ordering');
+
+// 装备栏里的未知旧物品、数量为 0 的物品不能偷偷提供属性。
+const invalidFixtureState = {
+  ...fixtureState,
+  inventory: {
+    items: { test_blade: 0, test_armor: 1, test_charm: 1 },
+    equipment: { weapon: 'test_blade', armor: 'unknown_armor', accessory: 'test_charm' }
+  }
+};
+assert.deepEqual(
+  getEquipmentStatModifiers(invalidFixtureState, fixtureCatalog),
+  { attack: 0, defense: 0, speed: 0, maxHp: 0, maxQi: 30 },
+  'invalid equipped entries incorrectly granted combat stats'
+);
+
+console.log('inventory smoke passed: baseline + catalog + real inventory + equipment + combat modifiers verified');
