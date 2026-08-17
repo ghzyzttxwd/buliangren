@@ -3,6 +3,8 @@ import fs from 'node:fs';
 
 const app = fs.readFileSync('src/app.js', 'utf8');
 const shell = fs.readFileSync('ui-shell.css', 'utf8');
+const partyFix = fs.readFileSync('party-fix.css', 'utf8');
+const index = fs.readFileSync('index.html', 'utf8');
 
 // v0.6 Stage D：锁住队伍 / 武学页面的信息层级，不锁具体像素。
 for (const marker of [
@@ -39,4 +41,10 @@ for (const selector of ['.party-summary', '.character-card', '.character-stats',
 assert.ok(!/\.character-grid[^}]*overflow-x\s*:\s*(auto|scroll)/s.test(shell), 'party page must not require horizontal scrolling');
 assert.ok(!/\.skill-list[^}]*overflow-x\s*:\s*(auto|scroll)/s.test(shell), 'skills page must not require horizontal scrolling');
 
-console.log('party/skills UI smoke passed: hierarchy + status + requirements + mobile no-horizontal-scroll verified');
+// 真机 hotfix：角色占位字不能继续继承旧的下沉偏移，否则“侠/梦/岐/臣”等字会被裁切。
+assert.ok(index.includes('href="./party-fix.css"'), 'party glyph hotfix stylesheet must be loaded');
+assert.ok(partyFix.includes('.character-card .portrait::before'), 'portrait glyph override is missing');
+assert.ok(/transform\s*:\s*none/.test(partyFix), 'portrait glyph must cancel legacy downward transform');
+assert.ok(/align-items\s*:\s*center/.test(partyFix), 'portrait glyph container must vertically center content');
+
+console.log('party/skills UI smoke passed: hierarchy + status + requirements + mobile no-horizontal-scroll + portrait glyph hotfix verified');
