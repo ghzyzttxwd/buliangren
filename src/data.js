@@ -106,10 +106,13 @@ export const ITEM_CATALOG = Object.freeze({
     id: 'healing_powder',
     name: '止血散',
     category: ITEM_CATEGORIES.consumable,
-    description: '常见的外敷伤药，可在战斗外或战斗中用于恢复气血。',
+    description: '常见的外敷伤药。战斗外用于调理伤势、恢复体力；战斗中可恢复部分气血。',
     stackable: true,
     useContext: ['field', 'battle'],
-    effects: [{ type: 'restoreHpRatio', value: 0.25 }],
+    effects: [
+      { type: 'restoreStamina', value: 10, contexts: ['field'] },
+      { type: 'restoreHpRatio', value: 0.25, contexts: ['battle'] }
+    ],
     price: 24,
     defaultCount: 3
   }),
