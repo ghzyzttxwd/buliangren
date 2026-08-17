@@ -90,8 +90,58 @@ export const LOCATIONS = [
   { id:'luoyang', name:'洛阳', icon:'洛', desc:'大梁东都。第一季终局将指向焦兰殿。', unlock:(s)=>unlocked(s,'luoyang') }
 ];
 
-export const ITEMS = [
-  { name:'止血散', count:3, desc:'战斗外使用的基础伤药。' },
-  { name:'旧铜钱', count:1, desc:'从渝州驿道拾到的铜钱，似乎刻有特殊纹样。' },
-  { name:'粗布护腕', count:1, desc:'防御 +2。第一版暂作为展示装备。' }
-];
+export const ITEM_CATEGORIES = Object.freeze({
+  equipment: 'equipment',
+  consumable: 'consumable',
+  manual: 'manual',
+  fragment: 'fragment',
+  quest: 'quest',
+  treasure: 'treasure',
+  material: 'material'
+});
+
+// v0.5 正式物品目录。State 只保存 itemId -> count，不复制静态物品定义。
+export const ITEM_CATALOG = Object.freeze({
+  healing_powder: Object.freeze({
+    id: 'healing_powder',
+    name: '止血散',
+    category: ITEM_CATEGORIES.consumable,
+    description: '常见的外敷伤药，可在战斗外或战斗中用于恢复气血。',
+    stackable: true,
+    useContext: ['field', 'battle'],
+    effects: [{ type: 'restoreHpRatio', value: 0.25 }],
+    price: 24,
+    defaultCount: 3
+  }),
+  old_coin: Object.freeze({
+    id: 'old_coin',
+    name: '旧铜钱',
+    category: ITEM_CATEGORIES.quest,
+    description: '从渝州驿道拾到的铜钱，似乎刻有特殊纹样。',
+    stackable: false,
+    unique: true,
+    defaultCount: 1
+  }),
+  cloth_bracer: Object.freeze({
+    id: 'cloth_bracer',
+    name: '粗布护腕',
+    category: ITEM_CATEGORIES.equipment,
+    description: '以厚布反复缠制的护腕，能略微减轻近身冲击。',
+    stackable: false,
+    slot: 'accessory',
+    statModifiers: { defense: 2 },
+    defaultCount: 1
+  })
+});
+
+export function getItem(itemId) {
+  return ITEM_CATALOG[itemId] || null;
+}
+
+// 阶段 B 临时兼容旧行囊展示。阶段 C 会改为读取 state.inventory.items 后移除此依赖。
+export const ITEMS = Object.freeze(Object.values(ITEM_CATALOG).map(item => Object.freeze({
+  id: item.id,
+  name: item.name,
+  count: item.defaultCount ?? 0,
+  desc: item.description
+})));
