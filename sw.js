@@ -1,4 +1,4 @@
-const CACHE = 'buliangren-jianghuxing-v0.6.7-stable';
+const CACHE = 'buliangren-jianghuxing-v0.7.0';
 const ASSETS = [
   './',
   './index.html',
@@ -12,6 +12,7 @@ const ASSETS = [
   './feedback-ui.css',
   './mobile-ui.css',
   './src/app.js',
+  './src/art.js',
   './src/battle-ui.js',
   './src/feedback-ui.js',
   './src/data.js',
