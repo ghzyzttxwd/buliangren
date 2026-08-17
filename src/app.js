@@ -19,13 +19,17 @@ import {
   getItemCategoryLabel,
   getSlotLabel,
   getUseContextLabel,
+  getSpecialItemSemantic,
   formatStatModifiers,
   formatItemUseChanges,
   canUseConsumableItem,
   useConsumableItem,
+  canUseManualItem,
+  useManualItem,
   equipItem,
   unequipItem
 } from './inventory.js';
+import { getMerchant, getMerchantItems, canPurchaseItem, purchaseItem } from './shops.js';
 import {
   getRealmName,
   getBreakthroughInfo,
@@ -39,6 +43,7 @@ import { GAME_VERSION, SAVE_VERSION } from './version.js';
 let state = loadState();
 let view = 'world';
 let modal = null;
+let shop = null;
 let battle = null;
 let toastTimer = null;
 
@@ -60,6 +65,24 @@ function itemUseError(reason,context='field'){
     invalid_actor:'当前角色不能使用物品',
     battle_inactive:'当前不在战斗中'
   })[reason] || '当前无法使用此物品';
+}
+function manualUseError(result){
+  return ({
+    not_owned:'当前未持有此秘籍',
+    already_learned:'这门武学已经掌握',
+    realm_requirement:result?.requiredRealm?`境界不足 · 需${result.requiredRealm.name}`:'境界不足',
+    invalid_martial_art:'秘籍记录的武学无效',
+    not_manual:'此物品不是可研读秘籍'
+  })[result?.reason] || '当前无法研读此秘籍';
+}
+function shopError(reason){
+  return ({
+    insufficient_silver:'银两不足',
+    restricted_item:'此物不可由普通商人出售',
+    not_sold_here:'此商人不出售该物品',
+    merchant_missing:'商人数据不存在',
+    item_missing:'物品数据不存在'
+  })[reason] || '当前无法购买';
 }
 
 function chapterMeta(){
@@ -162,9 +185,16 @@ function bagView(){
       const usable=canUseConsumableItem(state,item.id,'field');
       action=`<button class="primary full" data-use-item="${esc(item.id)}" ${usable.ok?'':'disabled'}>${usable.ok?'使用':'当前无需使用'}</button>`;
     }
+    if(item.category==='manual'){
+      const check=canUseManualItem(state,item.id);
+      if(item.realmRequirement) meta.push(`研读境界：${getRealmName(item.realmRequirement)}`);
+      if(item.learnMartialArt && SKILLS[item.learnMartialArt]) meta.push(`可学：${SKILLS[item.learnMartialArt].name}`);
+      action=`<button class="primary full" data-study-manual="${esc(item.id)}" ${check.ok?'':'disabled'}>${check.ok?'研读':esc(manualUseError(check))}</button>`;
+    }
     const useContext=getUseContextLabel(item);
     if(useContext) meta.push(useContext);
-    if(item.category==='quest') meta.push('不可直接使用');
+    const semantic=getSpecialItemSemantic(item);
+    if(semantic?.description && item.category!=='manual') meta.push(semantic.description);
     if(item.category==='unknown') meta.push('兼容旧存档保留');
     return `<article class="item-card"><div class="item-head"><div class="item-title"><span class="skill-type">${esc(getItemCategoryLabel(item.category))}</span><b>${esc(item.name)}</b></div><span class="item-count">×${item.count}</span></div><p>${esc(item.description)}</p><div class="item-meta">${meta.slice(1).map(text=>`<span>${esc(text)}</span>`).join('')}</div>${action}</article>`;
   }).join(''):'<article class="item-card item-empty"><b>行囊空空</b><p>当前没有持有任何物品。</p></article>';
@@ -178,8 +208,21 @@ function locationModal(id){
   const events=getAvailableEvents(state,id);
   const eventButtons=events.map(event=>`<button class="story-option" data-event="${event.id}"><b>${categoryLabel(event.category)} · ${event.title}</b><small>${event.desc}</small></button>`).join('');
   const rest=id==='yuzhou'?'<button class="story-option" data-action="rest"><b>客栈休整</b><small>暂时歇脚，整理江湖见闻。</small></button>':'';
+  const merchant=id==='yuzhou'?'<button class="story-option" data-shop="yuzhou_apothecary"><b>渝州药摊</b><small>用银两购买常见伤药。</small></button>':'';
   const body=eventButtons || '<button class="story-option"><b>暂时无事发生</b><small>继续提升声望、境界或推进其他事件后再来看看。</small></button>';
-  return `<div class="modal" data-close><section class="sheet" data-sheet><div class="sheet-handle"></div><div class="eyebrow">地点 · 条件事件</div><h2>${loc.name}</h2><div class="sheet-desc">${loc.desc}</div><div class="option-stack">${body}${rest}<button class="secondary full" data-close-btn>返回江湖</button></div></section></div>`;
+  return `<div class="modal" data-close><section class="sheet" data-sheet><div class="sheet-handle"></div><div class="eyebrow">地点 · 条件事件</div><h2>${loc.name}</h2><div class="sheet-desc">${loc.desc}</div><div class="option-stack">${body}${rest}${merchant}<button class="secondary full" data-close-btn>返回江湖</button></div></section></div>`;
+}
+
+function shopModal(merchantId){
+  const merchant=getMerchant(merchantId);
+  if(!merchant) return '';
+  const listings=getMerchantItems(merchantId);
+  const cards=listings.length?listings.map(({item,price})=>{
+    const check=canPurchaseItem(state,merchantId,item.id);
+    const owned=state.inventory.items[item.id]||0;
+    return `<article class="item-card"><div class="item-head"><div class="item-title"><span class="skill-type">${esc(getItemCategoryLabel(item.category))}</span><b>${esc(item.name)}</b></div><span class="item-count">持有 ×${owned}</span></div><p>${esc(item.description)}</p><div class="item-meta"><span>价格：${price} 银</span></div><button class="primary full" data-buy-item="${esc(item.id)}" data-buy-merchant="${esc(merchantId)}" ${check.ok?'':'disabled'}>${check.ok?`购买 · ${price} 银`:esc(shopError(check.reason))}</button></article>`;
+  }).join(''):'<article class="item-card item-empty"><b>暂无商品</b><p>商人今天没有可出售的东西。</p></article>';
+  return `<div class="modal"><section class="sheet"><div class="sheet-handle"></div><div class="eyebrow">商人 · 银两 ${state.player.silver}</div><h2>${esc(merchant.name)}</h2><div class="sheet-desc">${esc(merchant.description)}</div><section class="inventory-list">${cards}</section><button class="secondary full" data-shop-close>返回${merchant.location==='yuzhou'?'渝州':'江湖'}</button></section></div>`;
 }
 
 function battleStatusHtml(f){
@@ -207,7 +250,7 @@ function battleModal(){
 
 function render(){
   const pages={world:worldView,party:partyView,skills:skillsView,bag:bagView,logs:logsView};
-  app.innerHTML=`<div class="app-shell">${header()}${pages[view]()}${nav()}</div>${modal?locationModal(modal):''}${battle?battleModal():''}`;
+  app.innerHTML=`<div class="app-shell">${header()}${pages[view]()}${nav()}</div>${modal?locationModal(modal):''}${shop?shopModal(shop):''}${battle?battleModal():''}`;
   bind();
 }
 
@@ -219,6 +262,7 @@ function startEvent(eventId){
     battle=createBattle(event.action.enemies||[],state.party,state.martialArts,state);
     battle.eventId=event.id;
     modal=null;
+    shop=null;
     persist();
     render();
     return;
@@ -296,6 +340,15 @@ function handleUseFieldItem(itemId){
   showToast(`${result.item.name} · ${changeText} · 剩余 ${result.remaining}`);
 }
 
+function handleStudyManual(itemId){
+  const result=useManualItem(state,itemId);
+  if(!result.ok){ showToast(manualUseError(result)); return; }
+  state.logs.unshift(`你研读【${result.item.name}】，学会了【${result.skill.name}】。`);
+  persist();
+  render();
+  showToast(`学会武学 · ${result.skill.name}${result.consumed?` · 秘籍剩余 ${result.remaining}`:''}`);
+}
+
 function handleBattleItem(itemId){
   const action=useBattleItem(battle,state,itemId);
   battle=action.battle;
@@ -306,25 +359,38 @@ function handleBattleItem(itemId){
   showToast(`${action.result.item.name} · ${changeText} · 剩余 ${action.result.remaining}`);
 }
 
+function handlePurchase(merchantId,itemId){
+  const result=purchaseItem(state,merchantId,itemId);
+  if(!result.ok){ showToast(shopError(result.reason)); return; }
+  state.logs.unshift(`你在【${result.merchant.name}】花费 ${result.totalPrice} 银，购得【${result.item.name}】×${result.count}。`);
+  persist();
+  render();
+  showToast(`${result.item.name} +${result.count} · 剩余银两 ${result.remainingSilver}`);
+}
+
 function bind(){
-  document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>{view=b.dataset.nav; modal=null; render();});
-  document.querySelectorAll('[data-location]').forEach(b=>b.onclick=()=>{modal=b.dataset.location; render();});
-  document.querySelector('[data-quest]')?.addEventListener('click',e=>{modal=e.currentTarget.dataset.quest;render();});
+  document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>{view=b.dataset.nav; modal=null;shop=null; render();});
+  document.querySelectorAll('[data-location]').forEach(b=>b.onclick=()=>{modal=b.dataset.location;shop=null; render();});
+  document.querySelector('[data-quest]')?.addEventListener('click',e=>{modal=e.currentTarget.dataset.quest;shop=null;render();});
   document.querySelector('[data-breakthrough]')?.addEventListener('click',handleBreakthrough);
   document.querySelectorAll('[data-event]').forEach(b=>b.onclick=()=>startEvent(b.dataset.event));
-  document.querySelectorAll('[data-close]').forEach(x=>x.addEventListener('click',e=>{if(e.target===x){modal=null;render();}}));
+  document.querySelectorAll('[data-close]').forEach(x=>x.addEventListener('click',e=>{if(e.target===x){modal=null;shop=null;render();}}));
   document.querySelectorAll('[data-sheet]').forEach(x=>x.addEventListener('click',e=>e.stopPropagation()));
-  document.querySelector('[data-close-btn]')?.addEventListener('click',()=>{modal=null;render();});
+  document.querySelector('[data-close-btn]')?.addEventListener('click',()=>{modal=null;shop=null;render();});
   document.querySelector('[data-action="rest"]')?.addEventListener('click',()=>{modal=null;render();showToast('已休整');});
+  document.querySelectorAll('[data-shop]').forEach(b=>b.onclick=()=>{shop=b.dataset.shop;modal=null;render();});
+  document.querySelector('[data-shop-close]')?.addEventListener('click',()=>{shop=null;modal='yuzhou';render();});
+  document.querySelectorAll('[data-buy-item]').forEach(b=>b.onclick=()=>handlePurchase(b.dataset.buyMerchant,b.dataset.buyItem));
   document.querySelectorAll('[data-equip-item]').forEach(b=>b.onclick=()=>handleEquipItem(b.dataset.equipItem,b.dataset.equipSlot));
   document.querySelectorAll('[data-unequip-slot]').forEach(b=>b.onclick=()=>handleUnequipItem(b.dataset.unequipSlot));
   document.querySelectorAll('[data-use-item]').forEach(b=>b.onclick=()=>handleUseFieldItem(b.dataset.useItem));
+  document.querySelectorAll('[data-study-manual]').forEach(b=>b.onclick=()=>handleStudyManual(b.dataset.studyManual));
   document.querySelector('[data-basic-attack]')?.addEventListener('click',()=>{battle=basicAttack(battle);render();});
   document.querySelectorAll('[data-skill]').forEach(b=>b.onclick=()=>{battle=useSkill(battle,b.dataset.skill);render();});
   document.querySelectorAll('[data-battle-item]').forEach(b=>b.onclick=()=>handleBattleItem(b.dataset.battleItem));
   document.querySelectorAll('[data-battle-finish]').forEach(b=>b.addEventListener('click',finishBattle));
   document.querySelectorAll('[data-battle-leave]').forEach(b=>b.addEventListener('click',leaveBattle));
-  document.querySelector('[data-reset]')?.addEventListener('click',()=>{if(confirm('确定清空当前本地存档？')){state=resetState();view='world';modal=null;battle=null;render();showToast('存档已重置');}});
+  document.querySelector('[data-reset]')?.addEventListener('click',()=>{if(confirm('确定清空当前本地存档？')){state=resetState();view='world';modal=null;shop=null;battle=null;render();showToast('存档已重置');}});
 }
 
 render();
