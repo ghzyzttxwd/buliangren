@@ -38,6 +38,8 @@ jobs:
         run: node --experimental-default-type=module tests/party-skills-ui-smoke.mjs
       - name: Smoke test inventory and shop UX
         run: node --experimental-default-type=module tests/inventory-shop-ui-smoke.mjs
+      - name: Smoke test battle UX
+        run: node --experimental-default-type=module tests/battle-ui-smoke.mjs
       - name: Smoke test v0.5 inventory regression
         run: node --experimental-default-type=module tests/v05-inventory-regression.mjs
       - name: Smoke test battle baseline
