@@ -1,4 +1,4 @@
-const CACHE = 'buliangren-jianghuxing-v0.5.0';
+const CACHE = 'buliangren-jianghuxing-v0.5.1';
 const ASSETS = [
   './',
   './index.html',
@@ -8,6 +8,7 @@ const ASSETS = [
   './src/app.js',
   './src/data.js',
   './src/state.js',
+  './src/inventory.js',
   './src/battle.js',
   './src/combatants.js',
   './src/statuses.js',
