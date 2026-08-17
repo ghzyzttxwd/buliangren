@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { ART_ASSETS, ART_STATUS, getArtAsset, getArtFallback, getArtPath } from '../src/art.js';
 
-// v0.7 Stage A: lock the art registry, sourcing docs and graceful fallback contract.
+// v0.7 Stage A/B: lock the art registry, sourcing docs, portrait integration and graceful fallback contract.
 assert.ok(fs.existsSync('docs/v0.7美术资源来源表.md'), 'art source registry document missing');
 assert.ok(fs.existsSync('assets/art/README.md'), 'art asset directory guide missing');
 
@@ -41,9 +41,16 @@ for (const id of required) {
 }
 
 assert.equal(getArtAsset('jiangchen-portrait')?.status, ART_STATUS.deferred, 'Jiangchen art must remain deferred in the first v0.7 production batch');
-assert.equal(getArtAsset('player-portrait')?.status, ART_STATUS.generateIfNeeded, 'original player portrait should be generated only when needed');
-assert.equal(getArtPath('player-portrait'), null, 'non-ready art must not expose a runtime path');
 assert.equal(getArtFallback('player-portrait')?.value, '侠', 'player portrait fallback must preserve current glyph UI');
+
+const portraitIds = ['player-portrait', 'chimeng-portrait', 'nvdi-portrait'];
+for (const id of portraitIds) {
+  const entry = getArtAsset(id);
+  assert.equal(entry?.status, ART_STATUS.ready, `Stage B portrait must be ready: ${id}`);
+  assert.ok(entry?.localPath?.endsWith('.webp'), `Stage B portrait should use local WebP: ${id}`);
+  assert.ok(fs.existsSync(entry.localPath), `Stage B portrait file missing: ${id} -> ${entry.localPath}`);
+  assert.equal(getArtPath(id), entry.localPath, `ready portrait must expose runtime path: ${id}`);
+}
 
 for (const entry of Object.values(ART_ASSETS)) {
   if (entry.localPath) {
@@ -60,4 +67,16 @@ for (const marker of ['网上找优先', 'reference-only', 'generate-if-needed',
   assert.ok(sources.includes(marker), `art sourcing policy marker missing: ${marker}`);
 }
 
-console.log(`art smoke passed: ${Object.keys(ART_ASSETS).length} registered assets + fallbacks + no-hotlink sourcing policy verified`);
+const index = fs.readFileSync('index.html', 'utf8');
+const portraitUi = fs.readFileSync('src/portrait-ui.js', 'utf8');
+const portraitCss = fs.readFileSync('portrait-art.css', 'utf8');
+assert.ok(index.includes('href="./portrait-art.css"'), 'portrait stylesheet must be loaded');
+assert.ok(index.includes('src="./src/portrait-ui.js"'), 'portrait UI helper must be loaded');
+for (const marker of ['player-portrait', 'chimeng-portrait', 'nvdi-portrait', 'getArtPath', 'data-char']) {
+  assert.ok(portraitUi.includes(marker), `portrait UI contract missing: ${marker}`);
+}
+assert.ok(portraitUi.includes("img.addEventListener('error'"), 'portrait UI must preserve fallback when an image fails');
+assert.ok(portraitCss.includes('object-fit: cover'), 'portrait image must have stable crop behavior');
+assert.ok(portraitCss.includes('.portrait-art'), 'portrait art CSS missing');
+
+console.log(`art smoke passed: ${Object.keys(ART_ASSETS).length} registered assets + Stage B portraits + fallbacks + no-hotlink sourcing policy verified`);
