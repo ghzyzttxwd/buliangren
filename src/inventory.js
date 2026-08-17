@@ -1,4 +1,5 @@
-import { ITEM_CATALOG } from './data.js';
+import { ITEM_CATALOG, SKILLS } from './data.js';
+import { getRealm } from './progression.js';
 
 const CATEGORY_LABELS = Object.freeze({
   equipment: '装备',
@@ -203,6 +204,101 @@ export function useConsumableItem(state, itemId, context, target = null) {
   };
 }
 
+export function canUseManualItem(state, itemId, itemCatalog = ITEM_CATALOG, skillCatalog = SKILLS) {
+  const inventory = state?.inventory;
+  if (!inventory?.items) return { ok: false, reason: 'invalid_state' };
+
+  const item = itemCatalog?.[itemId];
+  if (!item || item.category !== 'manual') return { ok: false, reason: 'not_manual' };
+
+  const count = inventory.items[itemId];
+  if (!Number.isFinite(count) || count <= 0) return { ok: false, reason: 'not_owned', item };
+
+  const skillId = item.learnMartialArt;
+  const skill = skillCatalog?.[skillId];
+  if (!skillId || !skill || skill.playerLearnable !== true) {
+    return { ok: false, reason: 'invalid_martial_art', item, skillId };
+  }
+
+  if (state?.martialArts?.[skillId]?.learned === true) {
+    return { ok: false, reason: 'already_learned', item, skillId, skill };
+  }
+
+  if (item.realmRequirement) {
+    const currentRealm = getRealm(state?.player?.realm);
+    const requiredRealm = getRealm(item.realmRequirement);
+    if (currentRealm.order < requiredRealm.order) {
+      return { ok: false, reason: 'realm_requirement', item, skillId, skill, requiredRealm };
+    }
+  }
+
+  return { ok: true, item, itemId, skillId, skill, count };
+}
+
+export function useManualItem(state, itemId, itemCatalog = ITEM_CATALOG, skillCatalog = SKILLS) {
+  const check = canUseManualItem(state, itemId, itemCatalog, skillCatalog);
+  if (!check.ok) return check;
+
+  state.martialArts = state.martialArts || {};
+  const current = state.martialArts[check.skillId] || {};
+  state.martialArts[check.skillId] = {
+    learned: true,
+    mastery: Number.isFinite(current.mastery) ? Math.max(1, current.mastery) : 1,
+    exp: Number.isFinite(current.exp) ? Math.max(0, current.exp) : 0
+  };
+
+  if (check.item.consumeOnUse === true) {
+    state.inventory.items[itemId] = Math.max(0, check.count - 1);
+  }
+
+  return {
+    ok: true,
+    item: check.item,
+    itemId,
+    skillId: check.skillId,
+    skill: check.skill,
+    consumed: check.item.consumeOnUse === true,
+    remaining: state.inventory.items[itemId]
+  };
+}
+
+export function isItemSellable(item = {}) {
+  if (!item || item.category === 'quest') return false;
+  return item.sellable !== false;
+}
+
+export function getSpecialItemSemantic(item = {}) {
+  switch (item.category) {
+    case 'manual': return {
+      kind: 'manual',
+      usable: true,
+      description: item.learnMartialArt ? '可研读学习武学' : '秘籍数据未配置学习目标'
+    };
+    case 'fragment': return {
+      kind: 'fragment',
+      usable: false,
+      description: '用于事件条件与数量收集；复杂合成本阶段暂缓'
+    };
+    case 'quest': return {
+      kind: 'quest',
+      usable: false,
+      sellable: false,
+      description: '剧情道具，不可随意使用或出售'
+    };
+    case 'treasure': return {
+      kind: 'treasure',
+      usable: false,
+      description: '宝物，可通过数据配置独特效果接口'
+    };
+    case 'material': return {
+      kind: 'material',
+      usable: false,
+      description: '材料，当前仅持有；锻造与复杂合成暂缓'
+    };
+    default: return null;
+  }
+}
+
 export function formatItemUseChanges(changes = []) {
   return changes
     .filter(change => Number.isFinite(change?.amount) && change.amount > 0)
@@ -223,12 +319,12 @@ export function getUseContextLabel(item = {}) {
   return `可用于：${contexts}`;
 }
 
-export function getInventoryEntries(state) {
+export function getInventoryEntries(state, itemCatalog = ITEM_CATALOG) {
   const counts = state?.inventory?.items || {};
   return Object.entries(counts)
     .filter(([, count]) => Number.isFinite(count) && count > 0)
     .map(([id, count]) => {
-      const definition = ITEM_CATALOG[id] || {
+      const definition = itemCatalog?.[id] || {
         id,
         name: id,
         category: 'unknown',
