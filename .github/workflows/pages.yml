@@ -30,6 +30,8 @@ jobs:
             node --check "$file"
           done
           node -e "JSON.parse(require('fs').readFileSync('manifest.webmanifest', 'utf8'))"
+      - name: Smoke test v0.7 art registry
+        run: node --experimental-default-type=module tests/art-smoke.mjs
       - name: Smoke test v0.6 UI regression
         run: node --experimental-default-type=module tests/v06-ui-regression.mjs
       - name: Smoke test v0.5 inventory regression
