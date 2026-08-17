@@ -2,6 +2,13 @@ import assert from 'node:assert/strict';
 import { defaultState, migrateSave, saveState } from '../src/state.js';
 import { checkCondition } from '../src/conditions.js';
 import { ITEM_CATALOG, ITEM_CATEGORIES, getItem } from '../src/data.js';
+import {
+  getInventoryEntries,
+  getItemCategoryLabel,
+  getSlotLabel,
+  getUseContextLabel,
+  formatStatModifiers
+} from '../src/inventory.js';
 
 const storage = new Map();
 globalThis.localStorage = {
@@ -130,4 +137,32 @@ assert.equal(bracer.category, 'equipment', 'cloth bracer should be equipment');
 assert.equal(bracer.slot, 'accessory', 'cloth bracer slot changed');
 assert.deepEqual(bracer.statModifiers, { defense: 2 }, 'cloth bracer stat modifiers changed');
 
-console.log('inventory smoke passed: baseline + stable item catalog + categories + item type data verified');
+// 阶段 C：行囊展示模型必须读取真实 State 数量，而不是 catalog 的默认展示数量。
+const realInventoryState = migrateSave({
+  ...base,
+  inventory: {
+    items: {
+      healing_powder: 1,
+      old_coin: 0,
+      cloth_bracer: 1,
+      legacy_token: 4
+    },
+    equipment: {
+      weapon: null,
+      armor: null,
+      accessory: 'cloth_bracer'
+    }
+  }
+});
+const entries = getInventoryEntries(realInventoryState);
+assert.equal(entries.length, 3, 'zero-count item should not appear in real inventory view');
+assert.equal(entries.find(item => item.id === 'healing_powder')?.count, 1, 'inventory view ignored real consumable count');
+assert.equal(entries.find(item => item.id === 'cloth_bracer')?.equippedSlot, 'accessory', 'inventory view did not expose equipped slot');
+assert.equal(entries.find(item => item.id === 'legacy_token')?.count, 4, 'legacy unknown item was hidden from real inventory view');
+assert.equal(entries.find(item => item.id === 'legacy_token')?.category, 'unknown', 'legacy unknown item fallback category missing');
+assert.equal(getItemCategoryLabel('consumable'), '消耗品', 'category label mismatch');
+assert.equal(getSlotLabel('accessory'), '饰品', 'slot label mismatch');
+assert.equal(getUseContextLabel(powder), '可用于：战斗外、战斗中', 'use context label mismatch');
+assert.equal(formatStatModifiers(bracer.statModifiers), '防御 +2', 'equipment stat text mismatch');
+
+console.log('inventory smoke passed: baseline + catalog + real state-driven inventory view verified');
