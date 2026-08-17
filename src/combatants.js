@@ -1,4 +1,5 @@
 import { CHARACTERS, ENEMIES, SKILLS } from './data.js';
+import { getEquipmentStatModifiers } from './inventory.js';
 import { getRealm } from './progression.js';
 
 const clone = value => JSON.parse(JSON.stringify(value));
@@ -30,7 +31,7 @@ function realmStats(realmId) {
   };
 }
 
-export function buildPlayerCombatant(state = null, martialArts = {}) {
+export function buildPlayerCombatant(state = null, martialArts = {}, itemCatalog = undefined) {
   const base = clone(CHARACTERS.player);
   const player = state?.player || {};
   const level = Math.max(1, Math.floor(finite(player.level, base.level || 1)));
@@ -38,17 +39,18 @@ export function buildPlayerCombatant(state = null, martialArts = {}) {
   const realm = realmStats(player.realm || 'unranked');
   const learned = learnedPlayerSkills(martialArts);
   const skills = [...new Set([...(base.skills || []), ...learned])];
+  const equipment = getEquipmentStatModifiers(state, itemCatalog);
 
   const baseHp = base.maxHp + levelDelta * 14;
   const baseAttack = base.attack + levelDelta * 2;
   const baseDefense = base.defense + levelDelta * 1.2;
   const baseSpeed = base.speed + levelDelta * 0.35;
 
-  const maxHp = Math.round(baseHp * realm.hpMultiplier);
-  const attack = Math.round(baseAttack * realm.combatMultiplier);
-  const defense = Math.round(baseDefense * realm.combatMultiplier);
-  const speed = round1(baseSpeed + realm.speedBonus);
-  const maxQi = Math.round(60 + level * 4 + realm.qiBonus);
+  const maxHp = Math.max(1, Math.round(baseHp * realm.hpMultiplier + equipment.maxHp));
+  const attack = Math.max(0, Math.round(baseAttack * realm.combatMultiplier + equipment.attack));
+  const defense = Math.max(0, Math.round(baseDefense * realm.combatMultiplier + equipment.defense));
+  const speed = Math.max(0, round1(baseSpeed + realm.speedBonus + equipment.speed));
+  const maxQi = Math.max(0, Math.round(60 + level * 4 + realm.qiBonus + equipment.maxQi));
 
   return {
     ...base,
