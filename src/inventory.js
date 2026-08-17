@@ -17,6 +17,8 @@ const SLOT_LABELS = Object.freeze({
   accessory: '饰品'
 });
 
+const EQUIPMENT_SLOTS = Object.freeze(Object.keys(SLOT_LABELS));
+
 const STAT_LABELS = Object.freeze({
   attack: '攻击',
   defense: '防御',
@@ -40,7 +42,37 @@ export function getSlotLabel(slot) {
 
 export function getEquippedSlot(state, itemId) {
   const equipment = state?.inventory?.equipment || {};
-  return Object.keys(SLOT_LABELS).find(slot => equipment[slot] === itemId) || null;
+  return EQUIPMENT_SLOTS.find(slot => equipment[slot] === itemId) || null;
+}
+
+export function equipItem(state, itemId, targetSlot = null) {
+  const inventory = state?.inventory;
+  if (!inventory?.items || !inventory?.equipment) return { ok: false, reason: 'invalid_state' };
+
+  const item = ITEM_CATALOG[itemId];
+  if (!item || item.category !== 'equipment') return { ok: false, reason: 'not_equipment' };
+
+  const ownedCount = inventory.items[itemId];
+  if (!Number.isFinite(ownedCount) || ownedCount <= 0) return { ok: false, reason: 'not_owned' };
+
+  const slot = targetSlot || item.slot;
+  if (!EQUIPMENT_SLOTS.includes(slot)) return { ok: false, reason: 'invalid_slot' };
+  if (item.slot !== slot) return { ok: false, reason: 'slot_mismatch' };
+
+  const replacedItemId = inventory.equipment[slot] || null;
+  inventory.equipment[slot] = itemId;
+  return { ok: true, item, itemId, slot, replacedItemId };
+}
+
+export function unequipItem(state, slot) {
+  const equipment = state?.inventory?.equipment;
+  if (!equipment || !EQUIPMENT_SLOTS.includes(slot)) return { ok: false, reason: 'invalid_slot' };
+
+  const itemId = equipment[slot];
+  if (!itemId) return { ok: false, reason: 'empty_slot' };
+
+  equipment[slot] = null;
+  return { ok: true, itemId, item: ITEM_CATALOG[itemId] || null, slot };
 }
 
 export function formatStatModifiers(modifiers = {}) {
