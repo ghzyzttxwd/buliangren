@@ -182,20 +182,50 @@ function worldView(){
 }
 
 function partyView(){
-  const playerCombat = buildPlayerCombatant(state, state.martialArts);
-  return `<main class="page"><div class="section-title"><h3>同行之人</h3><span>${state.party.length} / 4 上阵</span></div><section class="character-grid">${Object.values(CHARACTERS).map(c=>{
-    const inParty=state.party.includes(c.id); const locked=c.locked && !inParty;
+  const playerCombat=buildPlayerCombatant(state,state.martialArts);
+  const knownCount=Object.values(CHARACTERS).filter(c=>!c.locked||state.party.includes(c.id)||state.relationships[c.id]?.met).length;
+  const cards=Object.values(CHARACTERS).map(c=>{
+    const inParty=state.party.includes(c.id);
+    const locked=c.locked&&!inParty;
     const level=c.id==='player'?state.player.level:c.level;
     const rel=state.relationships[c.id];
     const stats=c.id==='player'?playerCombat:c;
-    const extra=c.id==='player'?`境界：${getRealmName(state.player.realm)} · 修为 ${state.player.cultivation} · 体力 ${state.player.stamina}/${state.player.maxStamina}`:rel?`关系：${relationLabel(rel.affinity)}${rel.met?'':' · 尚未相识'}`:`武学：${c.skills.map(id=>SKILLS[id].name).join('、')}`;
-    return `<article class="character-card ${locked?'locked':''}"><div class="portrait" data-char="${c.short}" style="--c1:${c.c1};--c2:${c.c2}"><span class="level">Lv.${level}</span></div><div class="char-info"><div class="rarity">${c.rarity}${inParty?' · 同行':''}</div><h3>${c.name}</h3><div class="stat-row"><span>攻 <b>${stats.attack}</b></span><span>防 <b>${stats.defense}</b></span><span>速 <b>${stats.speed}</b></span></div><div class="hpbar"><span style="width:100%"></span></div>${locked?`<div class="lock-note">🔒 ${c.unlock}</div>`:`<div class="lock-note">${extra}</div>`}</div></article>`;
-  }).join('')}</section></main>`;
+    const stateLabel=locked?'未解锁':inParty?'同行中':rel?.met?'已结识':'尚未相识';
+    const detail=c.id==='player'
+      ? `<div class="character-detail"><span><i>境界</i><b>${esc(getRealmName(state.player.realm))}</b></span><span><i>修为</i><b>${state.player.cultivation}</b></span><span><i>体力</i><b>${state.player.stamina}/${state.player.maxStamina}</b></span></div>`
+      : locked
+        ? `<div class="character-detail character-detail--single"><span><i>解锁条件</i><b>${esc(c.unlock)}</b></span></div>`
+        : rel
+          ? `<div class="character-detail character-detail--single"><span><i>关系</i><b>${esc(relationLabel(rel.affinity))}${rel.met?'':' · 尚未相识'}</b></span></div>`
+          : `<div class="character-detail character-detail--single"><span><i>武学</i><b>${esc(c.skills.map(id=>SKILLS[id]?.name||id).join('、'))}</b></span></div>`;
+    return `<article class="character-card ${locked?'locked':''}">
+      <div class="portrait" data-char="${esc(c.short)}" style="--c1:${c.c1};--c2:${c.c2}"><span class="level">Lv.${level}</span></div>
+      <div class="char-info">
+        <div class="character-card__head"><div><span class="rarity">${esc(c.rarity)}</span><h3>${esc(c.name)}</h3></div><span class="character-state ${locked?'character-state--locked':inParty?'character-state--active':''}">${stateLabel}</span></div>
+        <div class="character-stats"><span><i>攻</i><b>${stats.attack}</b></span><span><i>防</i><b>${stats.defense}</b></span><span><i>速</i><b>${stats.speed}</b></span></div>
+        ${detail}
+      </div>
+    </article>`;
+  }).join('');
+  return `<main class="page party-page"><div class="section-title"><h3>同行之人</h3><span>${state.party.length} / 4 同行</span></div><section class="party-summary"><div><span>当前同行</span><b>${state.party.length}</b></div><div><span>已知人物</span><b>${knownCount}/${Object.keys(CHARACTERS).length}</b></div><p>角色属性用于战斗构成；关系与解锁状态只展示现有剧情结果。</p></section><section class="character-grid">${cards}</section></main>`;
 }
 
 function skillsView(){
-  const owned=new Set([...state.party.flatMap(id=>CHARACTERS[id].skills), ...learnedPlayerSkills()]);
-  return `<main class="page"><div class="section-title"><h3>已掌握武学</h3><span>${owned.size} 门</span></div><section class="skill-list">${[...owned].map(id=>{const s=SKILLS[id];const mastery=state.martialArts[id]?.mastery||1;return `<article class="skill-card"><div class="skill-head"><span class="skill-name">${s.name}</span><span class="skill-type">${s.type}</span></div><p>${s.desc}</p><div class="skill-meta"><span>熟练 Lv.${mastery}</span><span>${s.heal?'治疗型':`威力 ${Math.round((s.power||1)*100)}%`} · 内力 ${getSkillQiCost(id)}</span></div></article>`}).join('')}</section></main>`;
+  const owned=new Set([...state.party.flatMap(id=>CHARACTERS[id].skills),...learnedPlayerSkills()]);
+  const cards=[...owned].map(id=>{
+    const s=SKILLS[id];
+    if(!s) return '';
+    const mastery=state.martialArts[id]?.mastery||1;
+    const effectLabel=s.heal?'治疗':'威力';
+    const effectValue=s.heal?`${Math.round(s.heal*100)}%最大气血`:`${Math.round((s.power||1)*100)}%`;
+    const realmText=s.realmRequirement?getRealmName(s.realmRequirement):'无';
+    return `<article class="skill-card">
+      <div class="skill-card__head"><div><span class="skill-type">${esc(s.type)}</span><h3 class="skill-name">${esc(s.name)}</h3></div><span class="skill-requirement"><i>境界要求</i><b>${esc(realmText)}</b></span></div>
+      <div class="skill-metrics"><span><i>熟练</i><b>Lv.${mastery}</b></span><span><i>${effectLabel}</i><b>${esc(effectValue)}</b></span><span><i>内力</i><b>${getSkillQiCost(id)}</b></span></div>
+      <div class="skill-description"><span>简介</span><p>${esc(s.desc)}</p></div>
+    </article>`;
+  }).join('');
+  return `<main class="page skills-page"><div class="section-title"><h3>已掌握武学</h3><span>${owned.size} 门</span></div><section class="skill-page-note"><b>武学总览</b><span>熟练度影响部分武学实际发挥；境界要求会限制战斗中的可用性。</span></section><section class="skill-list">${cards}</section></main>`;
 }
 
 function bagView(){
