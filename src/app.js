@@ -4,6 +4,7 @@ import {
   createBattle,
   useSkill,
   basicAttack,
+  useBattleItem,
   getCurrentActor,
   canUseSkill,
   getSkillQiCost,
@@ -19,6 +20,9 @@ import {
   getSlotLabel,
   getUseContextLabel,
   formatStatModifiers,
+  formatItemUseChanges,
+  canUseConsumableItem,
+  useConsumableItem,
   equipItem,
   unequipItem
 } from './inventory.js';
@@ -47,6 +51,16 @@ function showToast(msg){ clearTimeout(toastTimer); const old=document.querySelec
 function relationLabel(value=0){ if(value>=70)return '亲近'; if(value>=45)return '信任'; if(value>=20)return '熟悉'; if(value>=0)return '初识'; if(value>=-40)return '冷淡'; return '敌视'; }
 function categoryLabel(category){ return ({main:'主线',side:'支线',hidden:'奇遇',character:'人物',encounter:'江湖'})[category] || '事件'; }
 function learnedPlayerSkills(){ return Object.entries(state.martialArts||{}).filter(([id,art])=>art?.learned===true&&SKILLS[id]?.playerLearnable===true).map(([id])=>id); }
+function itemUseError(reason,context='field'){
+  return ({
+    empty:'物品已经用完',
+    wrong_context:'当前场景不能使用此物品',
+    no_effect:context==='battle'?'当前角色无需使用':'当前资源已满，无需使用',
+    not_consumable:'此物品不能直接使用',
+    invalid_actor:'当前角色不能使用物品',
+    battle_inactive:'当前不在战斗中'
+  })[reason] || '当前无法使用此物品';
+}
 
 function chapterMeta(){
   const table={
@@ -119,7 +133,7 @@ function partyView(){
     const level=c.id==='player'?state.player.level:c.level;
     const rel=state.relationships[c.id];
     const stats=c.id==='player'?playerCombat:c;
-    const extra=c.id==='player'?`境界：${getRealmName(state.player.realm)} · 修为 ${state.player.cultivation}`:rel?`关系：${relationLabel(rel.affinity)}${rel.met?'':' · 尚未相识'}`:`武学：${c.skills.map(id=>SKILLS[id].name).join('、')}`;
+    const extra=c.id==='player'?`境界：${getRealmName(state.player.realm)} · 修为 ${state.player.cultivation} · 体力 ${state.player.stamina}/${state.player.maxStamina}`:rel?`关系：${relationLabel(rel.affinity)}${rel.met?'':' · 尚未相识'}`:`武学：${c.skills.map(id=>SKILLS[id].name).join('、')}`;
     return `<article class="character-card ${locked?'locked':''}"><div class="portrait" data-char="${c.short}" style="--c1:${c.c1};--c2:${c.c2}"><span class="level">Lv.${level}</span></div><div class="char-info"><div class="rarity">${c.rarity}${inParty?' · 同行':''}</div><h3>${c.name}</h3><div class="stat-row"><span>攻 <b>${stats.attack}</b></span><span>防 <b>${stats.defense}</b></span><span>速 <b>${stats.speed}</b></span></div><div class="hpbar"><span style="width:100%"></span></div>${locked?`<div class="lock-note">🔒 ${c.unlock}</div>`:`<div class="lock-note">${extra}</div>`}</div></article>`;
   }).join('')}</section></main>`;
 }
@@ -144,8 +158,12 @@ function bagView(){
         ? `<button class="secondary full" data-unequip-slot="${esc(item.equippedSlot)}">卸下</button>`
         : `<button class="primary full" data-equip-item="${esc(item.id)}" data-equip-slot="${esc(item.slot)}">装备</button>`;
     }
+    if(item.category==='consumable' && item.useContext?.includes('field')){
+      const usable=canUseConsumableItem(state,item.id,'field');
+      action=`<button class="primary full" data-use-item="${esc(item.id)}" ${usable.ok?'':'disabled'}>${usable.ok?'使用':'当前无需使用'}</button>`;
+    }
     const useContext=getUseContextLabel(item);
-    if(useContext) meta.push(`${useContext}（阶段 F 启用操作）`);
+    if(useContext) meta.push(useContext);
     if(item.category==='quest') meta.push('不可直接使用');
     if(item.category==='unknown') meta.push('兼容旧存档保留');
     return `<article class="item-card"><div class="item-head"><div class="item-title"><span class="skill-type">${esc(getItemCategoryLabel(item.category))}</span><b>${esc(item.name)}</b></div><span class="item-count">×${item.count}</span></div><p>${esc(item.description)}</p><div class="item-meta">${meta.slice(1).map(text=>`<span>${esc(text)}</span>`).join('')}</div>${action}</article>`;
@@ -175,7 +193,11 @@ function battleModal(){
   const roundOrder=(battle.turnOrder||[]).filter(f=>f.hp>0).map(f=>`<span class="turn-order-unit ${current===f?'active':''}">${esc(f.name)}</span>`).join('<span class="turn-arrow">→</span>');
   const fighter=(f)=>`<div class="fighter ${current===f&&battle.status==='active'?'current':''} ${f.hp<=0?'dead':''}"><div class="fighter-top"><b>${esc(f.name)}</b><span class="realm-chip">${getRealmName(f.realm)}</span></div><div class="fighter-vitals"><span>血 ${Math.max(0,f.hp)}/${f.maxHp}</span><span>内 ${Math.max(0,f.qi??0)}/${f.maxQi??0}</span></div><div class="hpbar"><span style="width:${pct(f.hp,f.maxHp)}%"></span></div>${battleStatusHtml(f)}</div>`;
   let controls='';
-  if(battle.status==='active' && current?.side==='ally') controls=`<div class="skill-buttons"><button class="skill-btn" data-basic-attack><b>普通攻击</b><small>威力 100% · 回复 ${BASIC_ATTACK_QI_RECOVERY} 内力</small></button>${current.skills.map(id=>{const s=SKILLS[id];const cost=getSkillQiCost(id);const block=getSkillBlockReason(current,id);const usable=canUseSkill(current,id);const mastery=getSkillMastery(current,id);const effectivePower=Math.round((s.power||1)*getMasteryPowerMultiplier(current,id)*100);const reason=block==='realm'?`境界不足 · 需${getRealmName(s.realmRequirement)}`:block==='qi'?'内力不足':block?'当前不可用':'';const effectText=s.heal?'恢复气血':`威力 ${effectivePower}%`;return `<button class="skill-btn" data-skill="${id}" ${usable?'':'disabled'}><b>${s.name}</b><small>${usable?effectText:reason} · 熟练 ${mastery} · 消耗 ${cost}</small></button>`}).join('')}</div>`;
+  if(battle.status==='active' && current?.side==='ally'){
+    const skills=`<div class="skill-buttons"><button class="skill-btn" data-basic-attack><b>普通攻击</b><small>威力 100% · 回复 ${BASIC_ATTACK_QI_RECOVERY} 内力</small></button>${current.skills.map(id=>{const s=SKILLS[id];const cost=getSkillQiCost(id);const block=getSkillBlockReason(current,id);const usable=canUseSkill(current,id);const mastery=getSkillMastery(current,id);const effectivePower=Math.round((s.power||1)*getMasteryPowerMultiplier(current,id)*100);const reason=block==='realm'?`境界不足 · 需${getRealmName(s.realmRequirement)}`:block==='qi'?'内力不足':block?'当前不可用':'';const effectText=s.heal?'恢复气血':`威力 ${effectivePower}%`;return `<button class="skill-btn" data-skill="${id}" ${usable?'':'disabled'}><b>${s.name}</b><small>${usable?effectText:reason} · 熟练 ${mastery} · 消耗 ${cost}</small></button>`}).join('')}</div>`;
+    const itemButtons=getInventoryEntries(state).filter(item=>item.category==='consumable'&&item.useContext?.includes('battle')).map(item=>{const check=canUseConsumableItem(state,item.id,'battle',current);const note=check.ok?'使用后占用本次行动':itemUseError(check.reason,'battle');return `<button class="skill-btn" data-battle-item="${esc(item.id)}" ${check.ok?'':'disabled'}><b>${esc(item.name)} ×${item.count}</b><small>${esc(note)}</small></button>`}).join('');
+    controls=`${skills}${itemButtons?`<div class="eyebrow">战斗物品</div><div class="skill-buttons">${itemButtons}</div>`:''}`;
+  }
   if(battle.status==='win') controls='<button class="primary full" data-battle-finish>领取战果</button>';
   if(battle.status==='lose') controls='<button class="secondary full" data-battle-leave>暂时撤退</button>';
   const currentBanner=battle.status==='active'&&current?`<div class="current-actor-banner"><span>当前行动</span><b>${esc(current.name)}</b><small>${getRealmName(current.realm)} · 速度 ${current.speed}</small></div>`:'';
@@ -264,6 +286,26 @@ function handleUnequipItem(slot){
   showToast(`${result.item?.name || result.itemId} 已卸下`);
 }
 
+function handleUseFieldItem(itemId){
+  const result=useConsumableItem(state,itemId,'field');
+  if(!result.ok){ showToast(itemUseError(result.reason,'field')); return; }
+  const changeText=formatItemUseChanges(result.changes);
+  state.logs.unshift(`你使用【${result.item.name}】${changeText?`，${changeText}`:''}。`);
+  persist();
+  render();
+  showToast(`${result.item.name} · ${changeText} · 剩余 ${result.remaining}`);
+}
+
+function handleBattleItem(itemId){
+  const action=useBattleItem(battle,state,itemId);
+  battle=action.battle;
+  if(!action.result.ok){ showToast(itemUseError(action.result.reason,'battle')); return; }
+  const changeText=formatItemUseChanges(action.result.changes);
+  persist();
+  render();
+  showToast(`${action.result.item.name} · ${changeText} · 剩余 ${action.result.remaining}`);
+}
+
 function bind(){
   document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>{view=b.dataset.nav; modal=null; render();});
   document.querySelectorAll('[data-location]').forEach(b=>b.onclick=()=>{modal=b.dataset.location; render();});
@@ -276,8 +318,10 @@ function bind(){
   document.querySelector('[data-action="rest"]')?.addEventListener('click',()=>{modal=null;render();showToast('已休整');});
   document.querySelectorAll('[data-equip-item]').forEach(b=>b.onclick=()=>handleEquipItem(b.dataset.equipItem,b.dataset.equipSlot));
   document.querySelectorAll('[data-unequip-slot]').forEach(b=>b.onclick=()=>handleUnequipItem(b.dataset.unequipSlot));
+  document.querySelectorAll('[data-use-item]').forEach(b=>b.onclick=()=>handleUseFieldItem(b.dataset.useItem));
   document.querySelector('[data-basic-attack]')?.addEventListener('click',()=>{battle=basicAttack(battle);render();});
   document.querySelectorAll('[data-skill]').forEach(b=>b.onclick=()=>{battle=useSkill(battle,b.dataset.skill);render();});
+  document.querySelectorAll('[data-battle-item]').forEach(b=>b.onclick=()=>handleBattleItem(b.dataset.battleItem));
   document.querySelectorAll('[data-battle-finish]').forEach(b=>b.addEventListener('click',finishBattle));
   document.querySelectorAll('[data-battle-leave]').forEach(b=>b.addEventListener('click',leaveBattle));
   document.querySelector('[data-reset]')?.addEventListener('click',()=>{if(confirm('确定清空当前本地存档？')){state=resetState();view='world';modal=null;battle=null;render();showToast('存档已重置');}});
