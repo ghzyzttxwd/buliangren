@@ -18,6 +18,7 @@ const SLOT_LABELS = Object.freeze({
 });
 
 const EQUIPMENT_SLOTS = Object.freeze(Object.keys(SLOT_LABELS));
+const EQUIPMENT_STAT_KEYS = Object.freeze(['attack', 'defense', 'speed', 'maxHp', 'maxQi']);
 
 const STAT_LABELS = Object.freeze({
   attack: '攻击',
@@ -73,6 +74,28 @@ export function unequipItem(state, slot) {
 
   equipment[slot] = null;
   return { ok: true, itemId, item: ITEM_CATALOG[itemId] || null, slot };
+}
+
+export function getEquipmentStatModifiers(state, itemCatalog = ITEM_CATALOG) {
+  const inventory = state?.inventory;
+  const equipment = inventory?.equipment || {};
+  const items = inventory?.items || {};
+  const totals = Object.fromEntries(EQUIPMENT_STAT_KEYS.map(key => [key, 0]));
+
+  for (const slot of EQUIPMENT_SLOTS) {
+    const itemId = equipment[slot];
+    if (!itemId || !Number.isFinite(items[itemId]) || items[itemId] <= 0) continue;
+
+    const item = itemCatalog?.[itemId];
+    if (!item || item.category !== 'equipment' || item.slot !== slot) continue;
+
+    for (const key of EQUIPMENT_STAT_KEYS) {
+      const value = item.statModifiers?.[key];
+      if (Number.isFinite(value)) totals[key] += value;
+    }
+  }
+
+  return totals;
 }
 
 export function formatStatModifiers(modifiers = {}) {
