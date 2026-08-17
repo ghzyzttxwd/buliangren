@@ -18,7 +18,9 @@ import {
   getItemCategoryLabel,
   getSlotLabel,
   getUseContextLabel,
-  formatStatModifiers
+  formatStatModifiers,
+  equipItem,
+  unequipItem
 } from './inventory.js';
 import {
   getRealmName,
@@ -132,17 +134,21 @@ function bagView(){
   const total=entries.reduce((sum,item)=>sum+item.count,0);
   const cards=entries.length?entries.map(item=>{
     const meta=[getItemCategoryLabel(item.category)];
+    let action='';
     if(item.category==='equipment'){
       meta.push(`部位：${getSlotLabel(item.slot)}`);
       meta.push(item.equippedSlot?`已装备：${getSlotLabel(item.equippedSlot)}`:'未装备');
       const stats=formatStatModifiers(item.statModifiers);
       if(stats) meta.push(stats);
+      action=item.equippedSlot
+        ? `<button class="secondary full" data-unequip-slot="${esc(item.equippedSlot)}">卸下</button>`
+        : `<button class="primary full" data-equip-item="${esc(item.id)}" data-equip-slot="${esc(item.slot)}">装备</button>`;
     }
     const useContext=getUseContextLabel(item);
     if(useContext) meta.push(`${useContext}（阶段 F 启用操作）`);
     if(item.category==='quest') meta.push('不可直接使用');
     if(item.category==='unknown') meta.push('兼容旧存档保留');
-    return `<article class="item-card"><div class="item-head"><div class="item-title"><span class="skill-type">${esc(getItemCategoryLabel(item.category))}</span><b>${esc(item.name)}</b></div><span class="item-count">×${item.count}</span></div><p>${esc(item.description)}</p><div class="item-meta">${meta.slice(1).map(text=>`<span>${esc(text)}</span>`).join('')}</div></article>`;
+    return `<article class="item-card"><div class="item-head"><div class="item-title"><span class="skill-type">${esc(getItemCategoryLabel(item.category))}</span><b>${esc(item.name)}</b></div><span class="item-count">×${item.count}</span></div><p>${esc(item.description)}</p><div class="item-meta">${meta.slice(1).map(text=>`<span>${esc(text)}</span>`).join('')}</div>${action}</article>`;
   }).join(''):'<article class="item-card item-empty"><b>行囊空空</b><p>当前没有持有任何物品。</p></article>';
   return `<main class="page"><div class="section-title"><h3>行囊</h3><span>${entries.length} 类 · 共 ${total} 件</span></div><section class="inventory-list">${cards}</section></main>`;
 }
@@ -233,6 +239,31 @@ function handleBreakthrough(){
   showToast(`突破成功 · ${result.realm.name}`);
 }
 
+function handleEquipItem(itemId, slot){
+  const result=equipItem(state,itemId,slot);
+  if(!result.ok){
+    const message={
+      not_equipment:'此物品不能装备',
+      not_owned:'当前未持有该装备',
+      slot_mismatch:'装备部位不匹配',
+      invalid_slot:'装备部位无效'
+    }[result.reason] || '当前无法装备';
+    showToast(message);
+    return;
+  }
+  persist();
+  render();
+  showToast(`${result.item.name} 已装备`);
+}
+
+function handleUnequipItem(slot){
+  const result=unequipItem(state,slot);
+  if(!result.ok){ showToast('当前部位没有可卸下装备'); return; }
+  persist();
+  render();
+  showToast(`${result.item?.name || result.itemId} 已卸下`);
+}
+
 function bind(){
   document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>{view=b.dataset.nav; modal=null; render();});
   document.querySelectorAll('[data-location]').forEach(b=>b.onclick=()=>{modal=b.dataset.location; render();});
@@ -243,6 +274,8 @@ function bind(){
   document.querySelectorAll('[data-sheet]').forEach(x=>x.addEventListener('click',e=>e.stopPropagation()));
   document.querySelector('[data-close-btn]')?.addEventListener('click',()=>{modal=null;render();});
   document.querySelector('[data-action="rest"]')?.addEventListener('click',()=>{modal=null;render();showToast('已休整');});
+  document.querySelectorAll('[data-equip-item]').forEach(b=>b.onclick=()=>handleEquipItem(b.dataset.equipItem,b.dataset.equipSlot));
+  document.querySelectorAll('[data-unequip-slot]').forEach(b=>b.onclick=()=>handleUnequipItem(b.dataset.unequipSlot));
   document.querySelector('[data-basic-attack]')?.addEventListener('click',()=>{battle=basicAttack(battle);render();});
   document.querySelectorAll('[data-skill]').forEach(b=>b.onclick=()=>{battle=useSkill(battle,b.dataset.skill);render();});
   document.querySelectorAll('[data-battle-finish]').forEach(b=>b.addEventListener('click',finishBattle));
