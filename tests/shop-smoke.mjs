@@ -34,13 +34,29 @@ const restrictedCatalog = {
   story_key: { id: 'story_key', category: 'quest', name: '剧情钥匙', price: 1 },
   unique_treasure: { id: 'unique_treasure', category: 'treasure', name: '唯一宝物', unique: true, price: 1 }
 };
-// 通过当前商人的 listing id 进行替换式 fixture，验证底层限制而不污染正式商店数据。
+const restrictedMerchants = {
+  bad_shop: {
+    id: 'bad_shop', name: '测试商人', location: 'yuzhou',
+    items: [
+      { itemId: 'story_key', price: 1 },
+      { itemId: 'unique_treasure', price: 1 }
+    ]
+  }
+};
 const fakeMerchantState = defaultState();
 const originalSilver = fakeMerchantState.player.silver;
-assert.equal(canPurchaseItem(fakeMerchantState, 'missing_merchant', 'story_key', 1, restrictedCatalog).reason, 'merchant_missing', 'missing merchant guard mismatch');
-assert.equal(fakeMerchantState.player.silver, originalSilver, 'merchant validation changed state');
+result = purchaseItem(fakeMerchantState, 'bad_shop', 'story_key', 1, restrictedCatalog, restrictedMerchants);
+assert.equal(result.ok, false, 'quest item was purchased from ordinary merchant');
+assert.equal(result.reason, 'restricted_item', 'quest item restriction reason mismatch');
+result = purchaseItem(fakeMerchantState, 'bad_shop', 'unique_treasure', 1, restrictedCatalog, restrictedMerchants);
+assert.equal(result.ok, false, 'unique treasure was purchased from ordinary merchant');
+assert.equal(result.reason, 'restricted_item', 'unique treasure restriction reason mismatch');
+assert.equal(fakeMerchantState.player.silver, originalSilver, 'restricted purchase changed silver');
+assert.equal(fakeMerchantState.inventory.items.story_key, undefined, 'restricted quest item entered inventory');
+assert.equal(fakeMerchantState.inventory.items.unique_treasure, undefined, 'restricted treasure entered inventory');
 
+assert.equal(canPurchaseItem(fakeMerchantState, 'missing_merchant', 'story_key', 1, restrictedCatalog, restrictedMerchants).reason, 'merchant_missing', 'missing merchant guard mismatch');
 assert.ok(state.player.silver >= 0, 'silver became negative');
 assert.ok(state.inventory.items.healing_powder >= 0, 'inventory became negative');
 
-console.log('shop smoke passed: data list + purchase + silver guard + inventory update verified');
+console.log('shop smoke passed: data list + purchase + silver guard + restricted item policy verified');
