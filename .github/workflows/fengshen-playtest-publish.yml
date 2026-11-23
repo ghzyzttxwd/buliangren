@@ -1,0 +1,40 @@
+name: Publish original Fengshen playtest
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'fengshen/**'
+      - '.github/workflows/fengshen-playtest-publish.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: fengshen-playtest-pages
+  cancel-in-progress: true
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout existing site and original Fengshen files
+        uses: actions/checkout@v4
+      - name: Validate original Fengshen game files
+        run: |
+          test -s fengshen/index.html
+          test -s fengshen/battle_fix.js
+          test -s fengshen/treasure_fix.js
+          node --check fengshen/battle_fix.js
+          node --check fengshen/treasure_fix.js
+      - name: Setup GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Upload full existing website plus separate Fengshen folder
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
